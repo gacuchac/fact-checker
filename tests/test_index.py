@@ -226,3 +226,18 @@ def test_w1_rebuild_keeps_other_tables(tmp_path):
         assert con.execute("SELECT count(*) FROM passages").fetchone()[0] == stats.passages
     finally:
         con.close()
+
+
+def test_w1_failed_rebuild_keeps_the_previous_abstracts(tmp_path):
+    corpus = load_corpus(Path(__file__).resolve().parents[1] / "data" / "corpus.json")
+    db = tmp_path / "factcheck.sqlite"
+    stats = build_index(corpus, db)
+    broken = corpus.model_copy(update={"docs": [corpus.docs[0], corpus.docs[0]]})
+    with pytest.raises(sqlite3.IntegrityError):
+        build_index(broken, db)
+    con = sqlite3.connect(db)
+    try:
+        assert con.execute("SELECT count(*) FROM docs").fetchone()[0] == stats.docs
+        assert con.execute("SELECT count(*) FROM passages").fetchone()[0] == stats.passages
+    finally:
+        con.close()

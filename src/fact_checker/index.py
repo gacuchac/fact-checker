@@ -45,12 +45,14 @@ def passages(doc: Doc) -> list[tuple[str, str, str, str]]:
 def build_index(corpus: Corpus, db: Path) -> IndexStats:
     """Build the docs table and the FTS5 passage index at db from the corpus.
 
-    Replaces only the docs and passages tables; any other table in db (the app's runs and events) is kept.
+    Replaces only the docs and passages tables, in one transaction: any other table in db (the app's runs and
+    events) is kept, and a failed rebuild rolls back to the previous tables.
     """
     db.parent.mkdir(parents=True, exist_ok=True)
     rows = [row for doc in corpus.docs for row in passages(doc)]
-    con = sqlite3.connect(db)
+    con = sqlite3.connect(db, isolation_level=None)
     try:
+        con.execute("BEGIN")
         con.execute("DROP TABLE IF EXISTS docs")
         con.execute("DROP TABLE IF EXISTS passages")
         con.execute(
@@ -69,7 +71,10 @@ def build_index(corpus: Corpus, db: Path) -> IndexStats:
             "passage_id UNINDEXED, doc_id UNINDEXED, title UNINDEXED, text, tokenize='porter unicode61')"
         )
         con.executemany("INSERT INTO passages VALUES (?, ?, ?, ?)", rows)
-        con.commit()
+        con.execute("COMMIT")
+    except sqlite3.Error:
+        con.execute("ROLLBACK")
+        raise
     finally:
         con.close()
     return IndexStats(docs=len(corpus.docs), passages=len(rows))
