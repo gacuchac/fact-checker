@@ -9,6 +9,7 @@ from pydantic import BaseModel
 from fact_checker.contracts import (
     ConfirmedStatements,
     FinalAnswer,
+    Flag,
     JudgeScores,
     RetrievalResult,
     Verdicts,
@@ -17,6 +18,7 @@ from fact_checker.finalize import _finalize_with_results
 from fact_checker.llm.base import LLMClient, LLMError, Usage
 from fact_checker.llm.config import Settings
 from fact_checker.report import render_answer
+from fact_checker.services.consistency import one_sided_unknowns
 from fact_checker.services.review import review
 from fact_checker.services.revise import revise
 from fact_checker.services.verify import verify
@@ -43,7 +45,8 @@ class CheckResult(BaseModel):
 
     verdicts, final and scores are the last round's; scores is None when the last review failed, with
     review_error saying why. first_final is the answer before any revision (equal to final when revised is
-    False) and first_scores the review of it (None when not revised). final_message is the rendered answer.
+    False) and first_scores the review of it (None when not revised). consistency_flags are the code checks of
+    the first answer (one_sided_unknowns). final_message is the rendered answer.
     """
 
     verdicts: Verdicts
@@ -55,6 +58,7 @@ class CheckResult(BaseModel):
     first_scores: JudgeScores | None
     revised: bool
     final_message: str
+    consistency_flags: list[Flag] = []
 
 
 def _llm_event(step: str, usage: Usage, final_sha256: str | None = None) -> Event:
@@ -148,11 +152,18 @@ def _changed(first: FinalAnswer, second: FinalAnswer) -> int:
     return sum(1 for s in second.statements if before.get(s.id) != s)
 
 
-def _message(final: FinalAnswer, scores: JudgeScores | None, first: FinalAnswer, revised: bool) -> str:
+def _message(final: FinalAnswer, scores: JudgeScores | None, first: FinalAnswer, trigger: str | None) -> str:
     answer = render_answer(final, scores)
-    if not revised:
+    if trigger is None:
         return answer
-    return f"Revised after review: {_changed(first, final)} statement(s) changed.\n{answer}"
+    return f"Revised after {trigger}: {_changed(first, final)} statement(s) changed.\n{answer}"
+
+
+def _consistency(final: FinalAnswer, tracer: Tracer | None) -> list[Flag]:
+    flags = one_sided_unknowns(final)
+    if tracer is not None:
+        tracer.record("code", "consistency", {"check": "one_sided_unknowns"}, {"flags": [f.model_dump() for f in flags]})
+    return flags
 
 
 def run_check(
@@ -163,14 +174,16 @@ def run_check(
     settings: Settings,
     tracer: Tracer | None = None,
 ) -> CheckResult:
-    """Verify the confirmed statements, ground them once, review, and revise once if the review needs attention.
+    """Verify the confirmed statements, ground them once, review, and revise once if the review or code asks.
 
-    A review that needs attention gives one revision round: revise, ground again, review again. A failing
+    After grounding, code flags each statement left unknown although all its kept quotes take one stance
+    (one_sided_unknowns). A review that needs attention, or any such flag, gives one revision round with the
+    reviewer's flags plus the code flags: revise, ground again, review again. A failing
     review gives scores None and review_error and skips revision; a failing revision keeps the first answer
     (revised False) and records a failed revise event. Returns the last round's answer with both rounds'
     finals, the step events and the final message rendered by code. The clients are raw: with a tracer, each
     call is recorded as an llm span named verify, review or revise, the retrievals as tool spans, each
-    grounding as a code span and the final message as a system span. Raises LLMError if verification fails,
+    grounding and the consistency check as code spans and the final message as a system span. Raises LLMError if verification fails,
     and FileNotFoundError if db is missing.
     """
     verifier = _traced(verify_client, tracer, "verify")
@@ -179,22 +192,25 @@ def run_check(
     events = [_llm_event("verify", usage)]
     final, results, event = _ground(confirmed, verdicts, db, tracer)
     events.append(event)
+    flags = _consistency(final, tracer)
     scores, error, event = _review(
         confirmed, verdicts, final, results, reviewer, settings.review_model, event.final_sha256
     )
     events.append(event)
-    first_final, first_scores, revised = final, None, False
-    if scores is not None and scores.needs_attention:
+    first_final, first_scores, revised, trigger = final, None, False, None
+    if scores is not None and (scores.needs_attention or flags):
         reviser = _traced(verify_client, tracer, "revise")
         started = time.monotonic()
         try:
+            asked = scores.model_copy(update={"flagged": [*scores.flagged, *flags]})
             new_verdicts, usage = revise(
-                confirmed, verdicts, final, results, scores, reviser, settings.verify_model, settings.verify_effort
+                confirmed, verdicts, final, results, asked, reviser, settings.verify_model, settings.verify_effort
             )
         except LLMError:
             events.append(Event(step="revise", ok=False, seconds=time.monotonic() - started, model=settings.verify_model))
         else:
             events.append(_llm_event("revise", usage))
+            trigger = "review" if scores.needs_attention else "the code consistency check"
             first_scores, revised, verdicts = scores, True, new_verdicts
             final, results, event = _ground(confirmed, verdicts, db, tracer)
             events.append(event)
@@ -202,7 +218,7 @@ def run_check(
                 confirmed, verdicts, final, results, reviewer, settings.review_model, event.final_sha256
             )
             events.append(event)
-    message = _message(final, scores, first_final, revised)
+    message = _message(final, scores, first_final, trigger)
     if tracer is not None:
         tracer.record("system", "final_message", {"revised": revised}, {"message": message})
     return CheckResult(
@@ -215,4 +231,5 @@ def run_check(
         first_scores=first_scores,
         revised=revised,
         final_message=message,
+        consistency_flags=flags,
     )

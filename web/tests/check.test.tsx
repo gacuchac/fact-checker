@@ -142,6 +142,26 @@ describe("Check page", () => {
     expect(within(screen.getByTestId("first-answer")).getByTestId("result-overall")).toHaveTextContent("contradicted");
   });
 
+  it("says when the code consistency check caused the revision and lists its flags", async () => {
+    const result = checkResult({
+      revised: true,
+      first_scores: scores({ needs_attention: false }),
+      consistency_flags: [
+        { statement_id: 1, dimension: "unknown_calibration", reason: "Code check: every kept quote supports the statement" },
+      ],
+    });
+    setup((url) => {
+      if (url.endsWith("/confirm")) return { body: { confirmed: {} } };
+      if (url.endsWith("/verify")) return { status: 202, body: { run_id: "r1", status: "verifying" } };
+      return { body: run({ status: "done", result }) };
+    });
+    await breakDown();
+    await userEvent.click(screen.getByTestId("approve-button"));
+    const banner = await screen.findByTestId("revised-banner");
+    expect(banner).toHaveTextContent("Revised after the code consistency check.");
+    expect(screen.getByTestId("consistency-flags")).toHaveTextContent("Statement 1: Code check: every kept quote supports");
+  });
+
   it("shows no banner or needs-attention for a plain result", async () => {
     setup((url) => {
       if (url.endsWith("/confirm")) return { body: { confirmed: {} } };

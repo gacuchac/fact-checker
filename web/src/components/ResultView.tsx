@@ -108,15 +108,26 @@ interface Props {
 
 export function ResultView({ runId, result }: Props): JSX.Element {
   const [showFirst, setShowFirst] = useState(false);
+  const codeFlags = result.consistency_flags ?? [];
+  const trigger = result.first_scores?.needs_attention === false ? "the code consistency check" : "review";
   return (
     <div className="result">
       <h2>Result</h2>
       {result.revised && (
         <div className="callout info" data-testid="revised-banner">
-          Revised after review.{" "}
+          Revised after {trigger}.{" "}
           <button type="button" className="link" data-testid="first-answer-toggle" onClick={() => setShowFirst(!showFirst)}>
             {showFirst ? "Hide first answer" : "Show first answer"}
           </button>
+          {codeFlags.length > 0 && (
+            <ul data-testid="consistency-flags">
+              {codeFlags.map((flag) => (
+                <li key={flag.statement_id}>
+                  Statement {flag.statement_id}: {flag.reason}
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       )}
       {result.revised && showFirst && (
