@@ -143,33 +143,30 @@ def test_full_session_with_revision_traces_every_step_in_order(db):
         ("llm", "decompose"),
         ("user", "edits"),
         ("user", "approval"),
-        ("tool", "retrieve"),
-        ("tool", "retrieve"),
+        *[("tool", "retrieve")] * 4,
         ("llm", "verify"),
         ("code", "finalize"),
-        ("tool", "retrieve"),
-        ("tool", "retrieve"),
+        *[("tool", "retrieve")] * 4,
         ("llm", "review"),
         ("llm", "revise"),
         ("code", "finalize"),
-        ("tool", "retrieve"),
-        ("tool", "retrieve"),
+        *[("tool", "retrieve")] * 4,
         ("llm", "review"),
         ("system", "final_message"),
     ]
     assert spans[0].input == {"claim": CLAIM}
     assert spans[1].input["schema"] == "DecomposeOutput" and spans[1].model == "opus"
-    finalize_first, finalize_second = spans[7], spans[12]
+    finalize_first, finalize_second = spans[9], spans[16]
     assert finalize_first.output["overall"] == {"verdict": "contradicted", "rule": 2}
     assert finalize_second.output["overall"] == {"verdict": "unknown", "rule": 3}
     statement = finalize_first.output["statements"][0]
     assert statement["downgrade_reason"] is None and statement["dropped_quotes"] == []
     assert statement["kept_quotes"][0]["quote"].startswith("LongAlign outperforms")
     assert finalize_first.input["verdicts"]["statements"][0]["id"] == 0
-    for parent, children in ((finalize_first, spans[8:10]), (finalize_second, spans[13:15])):
+    for parent, children in ((finalize_first, spans[10:14]), (finalize_second, spans[17:21])):
         assert all(c.parent_id == parent.id for c in children)
         assert [c.input["query"] for c in children] == [
-            f"{s.text} {s.query}" for s in v6_confirmed().statements
+            q for s in v6_confirmed().statements for q in (f"{s.text} {s.query}", CLAIM)
         ]
         assert children[0].input["k"] == 5 and children[0].input["per_doc"] == 2
         assert children[0].output["hits"][0]["passage_id"]

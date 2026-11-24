@@ -70,9 +70,10 @@ def test_verify_records_one_tool_span_per_retrieve_with_hits(full_db, tmp_path):
     confirmed = v6_confirmed()
     verify(confirmed, full_db, FakeClient([v6_output()]), "m", None, tracer=Tracer(db, run_id))
     spans = list_spans(db, run_id)
-    assert [(s.kind, s.name) for s in spans] == [("tool", "retrieve")] * 2
-    for s, statement in zip(spans, confirmed.statements, strict=True):
-        assert s.input == {"query": f"{statement.text} {statement.query}", "k": 5, "per_doc": 2}
+    assert [(s.kind, s.name) for s in spans] == [("tool", "retrieve")] * 4
+    queries = [q for st in confirmed.statements for q in (f"{st.text} {st.query}", confirmed.claim)]
+    for s, query in zip(spans, queries, strict=True):
+        assert s.input == {"query": query, "k": 5, "per_doc": 2}
         hits = s.output["hits"]
         assert hits and set(hits[0]) == {"passage_id", "doc_id", "title", "score", "text"}
     assert any(h["passage_id"] == "2401.18058v1#7" for h in spans[0].output["hits"])
