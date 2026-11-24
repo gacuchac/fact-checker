@@ -11,6 +11,7 @@ from fact_checker.contracts import (
     Statement,
     Verdicts,
 )
+from fact_checker.finalize import statement_hits
 from fact_checker.llm.base import LLMClient, LLMError, Usage
 from fact_checker.retrieve import retrieve
 from fact_checker.services.loader import load_prompt
@@ -45,6 +46,16 @@ def verdicts_from_output(output: VerdictsOutput, queries: dict[int, list[str]]) 
         raise LLMError(f"verdicts do not match the confirmed statements: {error}") from error
 
 
+def statement_queries(statement: Statement, claim: str) -> list[str]:
+    """Return the retrieval queries of one statement: "<text> <query>", then the user's claim.
+
+    The claim is searched too because the user's own wording often matches the abstract's key sentence better
+    than the decomposed statement does; it is left out when it equals the first query.
+    """
+    own = f"{statement.text} {statement.query}"
+    return [own] if claim.strip() == own.strip() else [own, claim]
+
+
 def _retrieve(db: Path, query: str, tracer: Tracer | None) -> RetrievalResult:
     if tracer is None:
         return retrieve(db, query, k=K, per_doc=PER_DOC)
@@ -64,15 +75,16 @@ def verify(
 ) -> tuple[Verdicts, Usage]:
     """Return the verdicts for every confirmed statement and the usage of the one model call.
 
-    Code retrieves k=5 passages (at most 2 per paper) for "<text> <query>" of each statement; the model sees
-    each statement with its own passages. Each verdict's queries is that retrieval query, set by code.
+    For each statement code retrieves k=5 passages (at most 2 per paper) for each of statement_queries, and
+    the model sees each statement with the union of its own passages. Each verdict's queries are those
+    retrieval queries, set by code, so finalize re-runs the same searches.
     With a tracer, each retrieval is recorded as a tool span with its query, k, per_doc and hits.
     Raises LLMError if the call fails or the verdict ids differ from the confirmed ids, and
     FileNotFoundError if db is missing.
     """
-    queries = {s.id: f"{s.text} {s.query}" for s in confirmed.statements}
-    results = {s.id: _retrieve(db, queries[s.id], tracer) for s in confirmed.statements}
-    user = "\n\n".join(statement_block(s, results[s.id].hits) for s in confirmed.statements)
+    queries = {s.id: statement_queries(s, confirmed.claim) for s in confirmed.statements}
+    results = {i: [_retrieve(db, q, tracer) for q in qs] for i, qs in queries.items()}
+    user = "\n\n".join(statement_block(s, statement_hits(results[s.id])) for s in confirmed.statements)
     output, usage = client.complete(load_prompt("verify"), user, VerdictsOutput, model, effort)
-    verdicts = verdicts_from_output(output, {i: [q] for i, q in queries.items()})
+    verdicts = verdicts_from_output(output, queries)
     return verdicts, usage

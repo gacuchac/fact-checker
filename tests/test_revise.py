@@ -1,3 +1,5 @@
+import json
+
 import pytest
 from pipeline_helpers import (
     COMMITTED,
@@ -9,10 +11,11 @@ from pipeline_helpers import (
 )
 
 from fact_checker.corpus import load_corpus
-from fact_checker.finalize import _finalize_with_results
+from fact_checker.finalize import _finalize_with_results, statement_hits
 from fact_checker.index import build_index
 from fact_checker.llm.base import LLMError
 from fact_checker.llm.fake import FakeClient
+from fact_checker.report import run_files
 from fact_checker.services.review import review
 from fact_checker.services.revise import revise
 from fact_checker.services.schemas import VerdictsOutput
@@ -70,9 +73,23 @@ def test_verify_records_one_tool_span_per_retrieve_with_hits(full_db, tmp_path):
     confirmed = v6_confirmed()
     verify(confirmed, full_db, FakeClient([v6_output()]), "m", None, tracer=Tracer(db, run_id))
     spans = list_spans(db, run_id)
-    assert [(s.kind, s.name) for s in spans] == [("tool", "retrieve")] * 2
-    for s, statement in zip(spans, confirmed.statements, strict=True):
-        assert s.input == {"query": f"{statement.text} {statement.query}", "k": 5, "per_doc": 2}
+    assert [(s.kind, s.name) for s in spans] == [("tool", "retrieve")] * 4
+    queries = [q for st in confirmed.statements for q in (f"{st.text} {st.query}", confirmed.claim)]
+    for s, query in zip(spans, queries, strict=True):
+        assert s.input == {"query": query, "k": 5, "per_doc": 2}
         hits = s.output["hits"]
         assert hits and set(hits[0]) == {"passage_id", "doc_id", "title", "score", "text"}
     assert any(h["passage_id"] == "2401.18058v1#7" for h in spans[0].output["hits"])
+
+
+def test_review_files_show_each_passage_once_per_statement(full_db):
+    confirmed, verdicts, final, results, _ = first_round(full_db)
+    files = run_files(confirmed, verdicts, final, results)
+    checks = {s["id"]: s for s in json.loads(files["checks.json"])["statements"]}
+    sections = files["transcript.md"].split("\n## ")[1:-1]
+    for s, section in zip(confirmed.statements, sections, strict=True):
+        unique = statement_hits(results[s.id])
+        assert sum(len(r.hits) for r in results[s.id]) > len(unique)
+        assert checks[s.id]["hit_count"] == len(unique)
+        lines = [line for line in section.splitlines() if line.startswith("- ") and "#" in line.split(" ")[1]]
+        assert len(lines) == len(set(lines)) == len(unique)

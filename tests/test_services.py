@@ -31,7 +31,7 @@ from fact_checker.services.schemas import (
     VerdictOutputItem,
     VerdictsOutput,
 )
-from fact_checker.services.verify import verify
+from fact_checker.services.verify import statement_queries, verify
 
 ROOT = Path(__file__).parent
 V6 = ROOT / "fixtures" / "spike6" / "V6"
@@ -238,8 +238,44 @@ def test_verify_one_call_with_each_statements_passages(full_db):
     assert '<passage id="2401.18058v1#7" doc_id="2401.18058v1"' in call.user
     assert isinstance(verdicts, Verdicts)
     assert [sv.verdict for sv in verdicts.statements] == ["supported", "contradicted"]
-    assert verdicts.statements[0].queries == [f"{s.text} {s.query}" for s in confirmed.statements][:1]
+    s0 = confirmed.statements[0]
+    assert verdicts.statements[0].queries == [f"{s0.text} {s0.query}", confirmed.claim]
     assert usage.model == "sonnet"
+
+
+def test_statement_queries_add_the_claim_unless_it_is_the_same_text():
+    s = v6_confirmed().statements[0]
+    assert statement_queries(s, "the claim") == [f"{s.text} {s.query}", "the claim"]
+    assert statement_queries(s, f" {s.text} {s.query} ") == [f"{s.text} {s.query}"]
+
+
+def test_verify_shows_each_statement_the_passages_its_claim_search_finds(full_db):
+    statement = Statement(
+        id=0,
+        text="Language model performance on tasks requiring use of a specific detail from a long input degrades "
+        "when that detail is placed in the middle of the input rather than at its start or end.",
+        load_bearing=True,
+        implied_by="details get lost in the middle",
+        query="U-shaped performance curve primacy recency bias long-context LLM multi-document question "
+        "answering key-value retrieval",
+        kind="explicit",
+        mark="confirmed",
+    )
+    confirmed = ConfirmedStatements(
+        claim="on long context, details get lost in the middle",
+        statements=[statement],
+        proposed=[statement],
+        edits=[],
+        rounds=1,
+        source="chat",
+    )
+    output = VerdictsOutput(
+        statements=[VerdictOutputItem(id=0, evidence=[], verdict="unknown", reason="r")]
+    )
+    client = FakeClient([output])
+    verify(confirmed, full_db, client, "m", None)
+    assert '<passage id="2307.03172v3#3"' in client.calls[0].user
+    assert '<passage id="2406.16008v2#0"' in client.calls[0].user
 
 
 def test_verify_rejects_missing_id(full_db):
