@@ -183,6 +183,17 @@ def _judge(args: argparse.Namespace) -> int:
     return 0
 
 
+STALE_CASE_FILES = (
+    "verdicts.json",
+    "final.json",
+    "scores.json",
+    "transcript.md",
+    "trace.jsonl",
+    "checks.json",
+    "events.jsonl",
+)
+
+
 def _load_cases(cases_dir: Path) -> list[dict]:
     return [yaml.safe_load(path.read_text()) for path in sorted(cases_dir.glob("*.yaml"))]
 
@@ -191,6 +202,8 @@ def _eval_prepare(args: argparse.Namespace) -> int:
     for case in _load_cases(args.cases):
         run = args.out / case["id"]
         run.mkdir(parents=True, exist_ok=True)
+        for name in STALE_CASE_FILES:
+            (run / name).unlink(missing_ok=True)
         (run / "confirmed.json").write_text(case_to_confirmed(case).model_dump_json(indent=2))
     return 0
 

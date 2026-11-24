@@ -175,3 +175,14 @@ def test_us14_committed_seed_cases_load_and_convert():
 def test_us14_duplicate_statement_ids_do_not_cover_a_missing_gold_statement():
     final = _final("contradicted", [_fstmt(0, "supported"), _fstmt(0, "supported")])
     assert score_runs([CASE_A], {"A": final}).rows[0].statements_correct == 1
+
+
+def test_us14_eval_prepare_clears_stale_run_outputs(tmp_path):
+    cases, out = tmp_path / "cases", tmp_path / "out"
+    _write_cases(cases)
+    stale = ("verdicts.json", "final.json", "scores.json", "transcript.md", "trace.jsonl", "checks.json", "events.jsonl")
+    (out / "A").mkdir(parents=True)
+    for name in stale:
+        (out / "A" / name).write_text("old")
+    assert main(["eval", "prepare", str(cases), str(out)]) == 0
+    assert sorted(p.name for p in (out / "A").iterdir()) == ["confirmed.json"]
