@@ -142,6 +142,7 @@ def test_full_session_with_revision_traces_every_step_in_order(db):
         ("user", "claim"),
         ("llm", "decompose"),
         ("user", "edits"),
+        ("user", "approval"),
         ("tool", "retrieve"),
         ("tool", "retrieve"),
         ("llm", "verify"),
