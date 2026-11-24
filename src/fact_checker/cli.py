@@ -1,12 +1,14 @@
 """The fc command line: a thin layer over the library functions."""
 
 import argparse
+import dataclasses
 import hashlib
 import json
 import sys
 import time
 from pathlib import Path
 
+import yaml
 from pydantic import ValidationError
 
 from fact_checker import corpus
@@ -17,6 +19,7 @@ from fact_checker.contracts import (
     JudgeScores,
     Verdicts,
 )
+from fact_checker.evals import EvalReport, case_to_confirmed, score_runs
 from fact_checker.finalize import _finalize_with_results
 from fact_checker.index import build_index
 from fact_checker.judge import judge
@@ -180,6 +183,42 @@ def _judge(args: argparse.Namespace) -> int:
     return 0
 
 
+def _load_cases(cases_dir: Path) -> list[dict]:
+    return [yaml.safe_load(path.read_text()) for path in sorted(cases_dir.glob("*.yaml"))]
+
+
+def _eval_prepare(args: argparse.Namespace) -> int:
+    for case in _load_cases(args.cases):
+        run = args.out / case["id"]
+        run.mkdir(parents=True, exist_ok=True)
+        (run / "confirmed.json").write_text(case_to_confirmed(case).model_dump_json(indent=2))
+    return 0
+
+
+def _load_final(path: Path) -> FinalAnswer | None:
+    try:
+        return FinalAnswer.model_validate_json(path.read_text())
+    except (OSError, ValidationError):
+        return None
+
+
+def _report_table(report: EvalReport) -> str:
+    lines = ["case  label        overall      statements"]
+    for row in report.rows:
+        overall = row.overall or "missing"
+        lines.append(f"{row.id:<5} {row.label:<12} {overall:<12} {row.statements_correct}/{row.statements_total}")
+    return "\n".join(lines)
+
+
+def _eval_score(args: argparse.Namespace) -> int:
+    cases = _load_cases(args.cases)
+    finals = {c["id"]: _load_final(args.out / c["id"] / "final.json") for c in cases}
+    report = score_runs(cases, finals)
+    print(json.dumps(dataclasses.asdict(report), indent=2))
+    print(_report_table(report))
+    return 0
+
+
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="fc")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -223,6 +262,17 @@ def _parser() -> argparse.ArgumentParser:
     judged = sub.add_parser("judge", help="score the final answer of a run with Sol")
     judged.add_argument("run", type=Path)
     judged.set_defaults(handler=_judge)
+
+    evaluate = sub.add_parser("eval", help="prepare and score the seed eval cases")
+    eval_sub = evaluate.add_subparsers(dest="eval_command", required=True)
+    for name, handler, help_text in (
+        ("prepare", _eval_prepare, "write one confirmed.json per case"),
+        ("score", _eval_score, "score the final.json of each case run"),
+    ):
+        step = eval_sub.add_parser(name, help=help_text)
+        step.add_argument("cases", type=Path)
+        step.add_argument("out", type=Path)
+        step.set_defaults(handler=handler)
     return parser
 
 

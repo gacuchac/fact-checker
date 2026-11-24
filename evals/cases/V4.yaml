@@ -1,0 +1,13 @@
+id: V4
+mode: statements
+factcheck:
+  claim: RAG outperforms domain fine-tuning at injecting domain knowledge into language models.
+  label: unknown
+  statements:
+  - text: RAG outperforms domain fine-tuning at injecting domain knowledge into language models.
+    load_bearing: true
+    query: RAG outperforms domain fine-tuning at injecting domain knowledge into language models.
+    gold_verdict: unknown
+  gold_doc_ids:
+  - 2312.05934v3
+  - 2604.23801v1
