@@ -129,6 +129,19 @@ def test_us3_index_cli_builds_index_and_reports(tmp_path, capsys):
     assert len(rows(db)) == 4
 
 
+@pytest.mark.parametrize("argv", [["index"], ["db", "build"]])
+def test_cli_build_creates_run_store_tables_and_keeps_runs_on_rebuild(tmp_path, argv):
+    from fact_checker.store import create_run, get_run
+
+    src, db = tmp_path / "corpus.json", tmp_path / "index.sqlite"
+    save_corpus(corpus(doc()), src)
+    command = [*argv, "--corpus", str(src), "--db", str(db)]
+    assert main(command) == 0
+    run_id = create_run(db, "claim")
+    assert main(command) == 0
+    assert get_run(db, run_id) is not None
+
+
 def test_us3_index_cli_missing_corpus_exits_1(tmp_path):
     db = tmp_path / "index.sqlite"
     assert main(["index", "--corpus", str(tmp_path / "none.json"), "--db", str(db)]) == 1

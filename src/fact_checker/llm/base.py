@@ -9,12 +9,13 @@ _DROPPED_KEYS = frozenset({"default", "title"})
 
 
 class Usage(BaseModel):
-    """Tokens and wall-clock seconds of one model call."""
+    """Tokens and wall-clock seconds of one model call, with the raw answer text when the client has it."""
 
     model: str
     input_tokens: int
     output_tokens: int
     seconds: float
+    raw_text: str | None = None
 
 
 class LLMError(Exception):

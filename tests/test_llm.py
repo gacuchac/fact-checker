@@ -93,6 +93,7 @@ def test_claude_request_shape_and_success():
     result, usage = client.complete("sys", "usr", Answer, "claude-x", "high")
     assert result == Answer(value=7)
     assert (usage.model, usage.input_tokens, usage.output_tokens) == ("claude-served", 11, 5)
+    assert usage.raw_text == '{"value": 7}'
     assert usage.seconds >= 0
     assert calls == [
         {
@@ -169,6 +170,7 @@ def test_openai_request_shape_and_success():
     result, usage = client.complete("sys", "usr", Answer, "gpt-x", "high")
     assert result == Answer(value=7)
     assert (usage.model, usage.input_tokens, usage.output_tokens) == ("gpt-served", 21, 9)
+    assert usage.raw_text == '{"value": 7}'
     assert calls == [
         {
             "model": "gpt-x",
