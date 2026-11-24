@@ -13,6 +13,7 @@ from fact_checker.contracts import (
     RetrievalResult,
     Verdicts,
 )
+from fact_checker.finalize import statement_hits
 
 
 def _byline(evidence: FinalEvidence) -> str:
@@ -80,7 +81,7 @@ def _checks(verdicts: Verdicts, final: FinalAnswer, results: Mapping[int, list[R
             {
                 "id": sv.id,
                 "queries": sv.queries,
-                "hit_count": sum(len(r.hits) for r in results[sv.id]),
+                "hit_count": len(statement_hits(results[sv.id])),
                 "model_verdict": grounded.model_verdict,
                 "verdict": grounded.verdict,
                 "downgrade_reason": grounded.downgrade_reason,
@@ -112,7 +113,7 @@ def _transcript(
         lines += [f"## [{s.id}] {s.text}\n", "Queries:"]
         lines += [f"- {r.query}" for r in results[s.id]]
         lines.append("\nPassages:")
-        lines += [f"- {h.passage_id} ({h.title}): {h.text}" for r in results[s.id] for h in r.hits]
+        lines += [f"- {h.passage_id} ({h.title}): {h.text}" for h in statement_hits(results[s.id])]
         reason = f" ({s.downgrade_reason})" if s.downgrade_reason else ""
         lines.append(f"\nModel verdict: {s.model_verdict}: {reasons[s.id]}")
         lines += [
