@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title type="html">ArXiv Query: search_query=&amp;id_list=2307.03172v3,2312.05934v3</title>
+  <id>http://arxiv.org/api/test</id>
+  <updated>2025-01-01T00:00:00-05:00</updated>
+  <entry>
+    <id>http://arxiv.org/abs/2307.03172v3</id>
+    <updated>2023-11-20T19:56:00Z</updated>
+    <published>2023-07-06T17:54:11Z</published>
+    <title>Lost in the Middle:
+  How Language Models   Use Long Contexts</title>
+    <summary>  While recent language models have the ability to take long contexts
+    as input, relatively little is known about how well they use
+    longer context.   We analyze performance on two tasks.</summary>
+    <author><name>Nelson F. Liu</name></author>
+    <author><name>Kevin Lin</name></author>
+    <author><name>John Hewitt</name></author>
+    <link href="http://arxiv.org/abs/2307.03172v3" rel="alternate" type="text/html"/>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/2312.05934v3</id>
+    <updated>2024-05-01T10:00:00Z</updated>
+    <published>2023-12-10T12:00:00Z</published>
+    <title>Fine-Tuning or   Retrieval?
+Comparing Knowledge Injection in LLMs</title>
+    <summary>Large language models encode a vast amount of factual knowledge.
+  We compare   fine-tuning with retrieval-augmented generation.</summary>
+    <author><name>Oded Ovadia</name></author>
+    <author><name>Menachem Brief</name></author>
+    <link href="http://arxiv.org/abs/2312.05934v3" rel="alternate" type="text/html"/>
+  </entry>
+</feed>
