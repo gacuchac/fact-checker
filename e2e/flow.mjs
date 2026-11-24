@@ -25,15 +25,19 @@ try {
   await shot("claim-entered");
   await page.getByTestId("decompose-button").click();
   const gate = page.getByTestId("access-code-input");
-  await gate.waitFor({ timeout: 15000 });
-  await shot("access-code-prompt");
-  await gate.fill(CODE);
-  await page.getByTestId("access-code-submit").click();
+  const gated = await gate.waitFor({ timeout: 10000 }).then(() => true, () => false);
+  if (gated) {
+    await shot("access-code-prompt");
+    await gate.fill(CODE ?? "");
+    await page.getByTestId("access-code-submit").click();
+  } else {
+    log("no access-code prompt (server has no FC_ACCESS_CODE)");
+  }
   await page.getByTestId("statement-row").first().waitFor({ timeout: 120000 });
   log("statements", await page.getByTestId("statement-row").count());
   await shot("statements-proposed");
   await page.getByTestId("approve-button").click();
-  await page.getByTestId("progress").waitFor({ timeout: 60000 }).catch(() => {});
+  await page.getByTestId("progress").waitFor({ timeout: 60000 });
   await shot("verifying");
   await page.getByTestId("result-overall").waitFor({ timeout: 240000 });
   log("overall", (await page.getByTestId("result-overall").innerText()).replace(/\s+/g, " "));

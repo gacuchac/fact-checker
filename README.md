@@ -127,7 +127,16 @@ Settings are environment variables (see `.env.example`):
 - `FC_DB`, `FC_WEB_DIST` and `FC_CORPUS`: file paths.
 
 ### Deployment
-One Railway service runs `uvicorn` with `fact_checker.api.app:create_app_from_env`. It serves both the API and the built React app.
+One Railway service runs `uvicorn` with `fact_checker.api.app:create_app_from_env`. It serves both the API and the built React app. Railway no longer lets new services use `railway.json`, so the build and start settings live on the service:
+
+| Setting | Value |
+| --- | --- |
+| Builder | Railpack (Python from `pyproject.toml`), with `RAILPACK_PACKAGES=node@22` for the web build |
+| Build command | `cd web && npm ci && npm run build` |
+| Start command | `uvicorn --factory fact_checker.api.app:create_app_from_env --host 0.0.0.0 --port $PORT` |
+| Healthcheck | `/api/health` |
+| Variables | `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `FC_ACCESS_CODE`, `FC_DAILY_RUN_CAP`, the model names, `FC_DB=/data/factcheck.sqlite`, `FC_WEB_DIST=/app/web/dist`, `FC_CORPUS=/app/data/corpus.json` |
+
 - **Database:** on a Railway volume at `/data`, so runs and traces survive redeploys.
 - **Secrets:** the API keys and the access code are Railway variables; nothing secret is in the repo.
 
