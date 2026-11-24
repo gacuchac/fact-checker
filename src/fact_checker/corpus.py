@@ -107,10 +107,11 @@ def fetch_feed(kept: Sequence[str], attempts: int = 4) -> bytes:
             time.sleep(RETRY_PAUSE_SECONDS)
         try:
             body = urllib.request.urlopen(request, timeout=60).read()
-        except OSError as exc:
+            entries = ET.fromstring(body).findall("a:entry", ATOM)
+        except (OSError, ET.ParseError) as exc:
             error = exc
             continue
-        if len(ET.fromstring(body).findall("a:entry", ATOM)) == len(kept):
+        if len(entries) == len(kept):
             return body
         error = RuntimeError("feed has the wrong number of entries")
     raise RuntimeError(f"fetch failed after {attempts} attempts: {error}")

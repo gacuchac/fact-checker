@@ -2,6 +2,7 @@ import json
 from pathlib import Path
 
 import pytest
+
 from fact_checker import corpus as corpus_mod
 from fact_checker.cli import main
 from fact_checker.corpus import (
@@ -100,3 +101,26 @@ def test_us2_committed_corpus_has_48_docs():
     assert c.dropped_ids == ["2307.03172v1", "2403.01432v1"]
     assert [d.doc_id for d in c.docs] == c.kept_ids
     assert json.loads(COMMITTED.read_text())["kept_ids"] == c.kept_ids
+
+
+class _Body:
+    def __init__(self, data: bytes) -> None:
+        self.data = data
+
+    def read(self) -> bytes:
+        return self.data
+
+
+def test_us2_fetch_feed_malformed_xml_raises_runtime_error(monkeypatch):
+    monkeypatch.setattr(corpus_mod.urllib.request, "urlopen", lambda *a, **k: _Body(b"<feed><entry>"))
+    with pytest.raises(RuntimeError, match="fetch failed after 1 attempts"):
+        corpus_mod.fetch_feed(["2307.03172v3"], attempts=1)
+
+
+def test_us2_fetch_cli_malformed_feed_exits_1(monkeypatch, tmp_path, capsys):
+    monkeypatch.setattr(corpus_mod.urllib.request, "urlopen", lambda *a, **k: _Body(b"not xml"))
+    monkeypatch.setattr(corpus_mod, "RETRY_PAUSE_SECONDS", 0)
+    out = tmp_path / "corpus.json"
+    assert main(["fetch", "--corpus", str(out)]) == 1
+    assert not out.exists()
+    assert "fetch failed" in capsys.readouterr().err
