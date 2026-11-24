@@ -3,10 +3,10 @@ from pathlib import Path
 
 import pytest
 import yaml
-from fact_checker.evals import case_to_confirmed, score_runs
 
 from fact_checker.cli import main
 from fact_checker.contracts import ConfirmedStatements, FinalAnswer
+from fact_checker.evals import case_to_confirmed, score_runs
 
 CASES_DIR = Path(__file__).resolve().parents[1] / "evals" / "cases"
 
@@ -170,3 +170,8 @@ def test_us14_committed_seed_cases_load_and_convert():
         confirmed = case_to_confirmed(case)
         assert confirmed.source == "case"
         assert len(confirmed.statements) == len(case["factcheck"]["statements"])
+
+
+def test_us14_duplicate_statement_ids_do_not_cover_a_missing_gold_statement():
+    final = _final("contradicted", [_fstmt(0, "supported"), _fstmt(0, "supported")])
+    assert score_runs([CASE_A], {"A": final}).rows[0].statements_correct == 1

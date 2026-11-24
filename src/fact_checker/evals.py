@@ -55,7 +55,8 @@ def _statements_correct(case: dict, final: FinalAnswer | None) -> int:
     if final is None:
         return 0
     gold = [s["gold_verdict"] for s in case["factcheck"]["statements"]]
-    return sum(s.id < len(gold) and s.verdict == gold[s.id] for s in final.statements)
+    by_id = {s.id: s.verdict for s in final.statements}
+    return sum(by_id.get(i) == verdict for i, verdict in enumerate(gold))
 
 
 def _row(case: dict, final: FinalAnswer | None) -> CaseRow:
