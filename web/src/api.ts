@@ -23,7 +23,7 @@ export class ApiError extends Error {
   }
 }
 
-export type AccessCodePrompt = () => Promise<string>;
+export type AccessCodePrompt = (wrong: boolean) => Promise<string>;
 
 let prompt: AccessCodePrompt | null = null;
 let pendingCode: Promise<string> | null = null;
@@ -57,9 +57,17 @@ export function setAccessCodePrompt(fn: AccessCodePrompt | null): void {
   prompt = fn;
 }
 
-function askForCode(): Promise<string> {
+function clearAccessCode(): void {
+  try {
+    localStorage.removeItem(STORAGE_KEY);
+  } catch {
+    // storage unavailable: nothing to clear
+  }
+}
+
+function askForCode(wrong: boolean): Promise<string> {
   if (prompt === null) return Promise.reject(new ApiError(401, { detail: "access code required" }));
-  pendingCode ??= prompt().finally(() => {
+  pendingCode ??= prompt(wrong).finally(() => {
     pendingCode = null;
   });
   return pendingCode;
@@ -83,14 +91,19 @@ async function parse(response: Response): Promise<unknown> {
   }
 }
 
-/** Fetch JSON from the API with the stored access code; on a 401, ask for a code, save it and retry once. Throws ApiError on any non-2xx. */
+/** Fetch JSON from the API with the stored access code; on a 401, clear a rejected stored code, ask for one and retry until accepted, saving it only then. Throws ApiError on any non-2xx. */
 export async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
-  let response = await send(path, init, getAccessCode());
-  if (response.status === 401) {
-    const code = await askForCode();
-    saveAccessCode(code);
+  let code = getAccessCode();
+  let response = await send(path, init, code);
+  let prompted = false;
+  while (response.status === 401) {
+    const wrong = code !== null && code !== "";
+    if (wrong) clearAccessCode();
+    code = await askForCode(wrong);
+    prompted = true;
     response = await send(path, init, code);
   }
+  if (prompted && code) saveAccessCode(code);
   const body = await parse(response);
   if (!response.ok) throw new ApiError(response.status, body);
   return body as T;

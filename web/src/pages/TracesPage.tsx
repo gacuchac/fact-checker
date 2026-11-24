@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { listRuns } from "../api";
+import { LoadError } from "../components/LoadError";
 import { useLoad } from "../hooks";
 
 export function TracesPage(): JSX.Element {
@@ -8,7 +9,7 @@ export function TracesPage(): JSX.Element {
     <div>
       <h1>Traces</h1>
       {runs.state === "loading" && <p className="muted">Loading…</p>}
-      {runs.state === "error" && <p className="issue">{runs.message}</p>}
+      {runs.state === "error" && <LoadError message={runs.message} retry={runs.retry} />}
       {runs.state === "ready" && runs.data.length === 0 && <p className="muted">No runs yet.</p>}
       {runs.state === "ready" && runs.data.length > 0 && (
         <table className="list">

@@ -10,6 +10,8 @@ interface Props {
   onAdded: (added: AddedRow[]) => void;
 }
 
+const MAX_STATEMENTS = 5;
+
 function replaceAt<T>(items: T[], index: number, item: T): T[] {
   return items.map((existing, i) => (i === index ? item : existing));
 }
@@ -45,6 +47,8 @@ function TextCell({ text, onSave }: TextCellProps): JSX.Element {
 export function StatementsTable({ rows, added, issues, onRows, onAdded }: Props): JSX.Element {
   const [nextKey, setNextKey] = useState(1);
   const known = new Set(rows.map((r) => r.statement.id));
+  const keptCount = rows.filter((r) => !r.dropped).length + added.length;
+  const full = keptCount >= MAX_STATEMENTS;
   const unmatched = issues.filter((issue) => !known.has(issue.statement_id));
 
   return (
@@ -129,6 +133,7 @@ export function StatementsTable({ rows, added, issues, onRows, onAdded }: Props)
               <button
                 type="button"
                 data-testid="add-statement"
+                disabled={full}
                 onClick={() => {
                   onAdded([...added, { key: nextKey, text: "" }]);
                   setNextKey(nextKey + 1);
@@ -136,6 +141,12 @@ export function StatementsTable({ rows, added, issues, onRows, onAdded }: Props)
               >
                 Add statement
               </button>
+              {full && (
+                <span className="muted" data-testid="add-limit-hint">
+                  {" "}
+                  At most {MAX_STATEMENTS} statements. Drop one to add another.
+                </span>
+              )}
             </td>
           </tr>
         </tbody>

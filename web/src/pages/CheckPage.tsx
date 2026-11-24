@@ -35,6 +35,7 @@ export function CheckPage({ pollMs = 2000 }: Props): JSX.Element {
   const [rows, setRows] = useState<Row[]>([]);
   const [added, setAdded] = useState<AddedRow[]>([]);
   const [issues, setIssues] = useState<ConfirmIssue[]>([]);
+  const [confirmed, setConfirmed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -67,6 +68,7 @@ export function CheckPage({ pollMs = 2000 }: Props): JSX.Element {
       setRows(rowsFrom(proposed.proposed));
       setAdded([]);
       setIssues([]);
+      setConfirmed(false);
       setPhase({ name: "review", runId: proposed.run_id });
     } catch (e) {
       setError(messageOf(e));
@@ -80,7 +82,10 @@ export function CheckPage({ pollMs = 2000 }: Props): JSX.Element {
     setError(null);
     setIssues([]);
     try {
-      await confirmClaim(runId, buildEdits(rows, added));
+      if (!confirmed) {
+        await confirmClaim(runId, buildEdits(rows, added));
+        setConfirmed(true);
+      }
       await verifyClaim(runId);
       setPhase({ name: "working", runId, status: "verifying" });
     } catch (e) {
@@ -120,9 +125,15 @@ export function CheckPage({ pollMs = 2000 }: Props): JSX.Element {
         <>
           <h2>Statements</h2>
           <StatementsTable rows={rows} added={added} issues={issues} onRows={setRows} onAdded={setAdded} />
-          <button type="button" data-testid="approve-button" disabled={busy} onClick={() => void approve(phase.runId)}>
-            Approve &amp; verify
-          </button>
+          {confirmed ? (
+            <button type="button" data-testid="retry-verify-button" disabled={busy} onClick={() => void approve(phase.runId)}>
+              Retry verification
+            </button>
+          ) : (
+            <button type="button" data-testid="approve-button" disabled={busy} onClick={() => void approve(phase.runId)}>
+              Approve &amp; verify
+            </button>
+          )}
         </>
       )}
       {phase.name === "working" && <Progress status={phase.status} />}

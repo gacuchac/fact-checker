@@ -1,5 +1,6 @@
 import { Link, useParams } from "react-router-dom";
 import { getDoc } from "../api";
+import { LoadError } from "../components/LoadError";
 import { useLoad } from "../hooks";
 
 export function DocPage(): JSX.Element {
@@ -9,7 +10,7 @@ export function DocPage(): JSX.Element {
     <div>
       <p><Link to="/abstracts">← Search</Link></p>
       {doc.state === "loading" && <p className="muted">Loading…</p>}
-      {doc.state === "error" && <p className="issue">{doc.message}</p>}
+      {doc.state === "error" && <LoadError message={doc.message} retry={doc.retry} />}
       {doc.state === "ready" && (
         <article>
           <h1>{doc.data.title}</h1>

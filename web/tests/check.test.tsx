@@ -165,4 +165,42 @@ describe("Check page", () => {
     await userEvent.click(screen.getByTestId("approve-button"));
     expect(await screen.findByText(/model unavailable/)).toBeInTheDocument();
   });
+
+  it("after verify fails, retry only calls verify and shows the error", async () => {
+    let verifies = 0;
+    const calls = setup((url) => {
+      if (url.endsWith("/confirm")) return { body: { confirmed: {} } };
+      if (url.endsWith("/verify")) {
+        verifies += 1;
+        return verifies === 1
+          ? { status: 429, body: { detail: "daily cap reached" } }
+          : { status: 202, body: { run_id: "r1", status: "verifying" } };
+      }
+      return { body: run({}) };
+    });
+    await breakDown();
+    await userEvent.click(screen.getByTestId("approve-button"));
+    expect(await screen.findByText(/daily cap reached/)).toBeInTheDocument();
+    await userEvent.click(screen.getByTestId("retry-verify-button"));
+    await screen.findByTestId("progress");
+    expect(calls.filter((c) => c.url.endsWith("/confirm"))).toHaveLength(1);
+    expect(verifies).toBe(2);
+  });
+
+  it("disables Add statement at five kept statements and shows a hint", async () => {
+    setup(() => undefined);
+    await breakDown();
+    for (let i = 0; i < 3; i++) await userEvent.click(screen.getByTestId("add-statement"));
+    expect(screen.getByTestId("add-statement")).toBeDisabled();
+    expect(screen.getByTestId("add-limit-hint")).toBeInTheDocument();
+    await userEvent.click(screen.getAllByTestId("statement-drop")[0]!);
+    expect(screen.getByTestId("add-statement")).toBeEnabled();
+  });
+
+  it("renders a 422 with a detail message above the table", async () => {
+    setup((url) => (url.endsWith("/confirm") ? { status: 422, body: { detail: "too many statements" } } : undefined));
+    await breakDown();
+    await userEvent.click(screen.getByTestId("approve-button"));
+    expect(await screen.findByText(/too many statements/)).toBeInTheDocument();
+  });
 });

@@ -7,14 +7,16 @@ interface Props {
 
 export function AccessCodeGate({ children }: Props): JSX.Element {
   const [asking, setAsking] = useState(false);
+  const [wrong, setWrong] = useState(false);
   const [value, setValue] = useState("");
   const resolver = useRef<((code: string) => void) | null>(null);
 
   useEffect(() => {
     setAccessCodePrompt(
-      () =>
+      (wasWrong) =>
         new Promise<string>((resolve) => {
           resolver.current = resolve;
+          setWrong(wasWrong);
           setAsking(true);
         }),
     );
@@ -37,6 +39,7 @@ export function AccessCodeGate({ children }: Props): JSX.Element {
           <form className="card access-form" onSubmit={submit}>
             <h2>Access code</h2>
             <p>This server needs an access code.</p>
+            {wrong && <p className="issue">Wrong access code</p>}
             <input
               data-testid="access-code-input"
               type="password"

@@ -41,3 +41,16 @@ it("shows the abstract of one paper", async () => {
   );
   expect(await screen.findByTestId("doc-abstract")).toHaveTextContent("THE ABSTRACT");
 });
+
+it("offers Retry when the search fails", async () => {
+  let n = 0;
+  mockFetch(() => (++n === 1 ? { status: 500, body: { detail: "down" } } : { body: [] }));
+  render(
+    <MemoryRouter>
+      <AbstractsPage />
+    </MemoryRouter>,
+  );
+  await userEvent.type(screen.getByTestId("doc-search"), "x{enter}");
+  await userEvent.click(await screen.findByTestId("retry-button"));
+  expect(await screen.findByText("No papers found.")).toBeInTheDocument();
+});

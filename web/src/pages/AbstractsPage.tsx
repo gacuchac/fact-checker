@@ -1,6 +1,7 @@
 import { type FormEvent, useState } from "react";
 import { Link } from "react-router-dom";
 import { searchDocs } from "../api";
+import { LoadError } from "../components/LoadError";
 import type { DocSummary } from "../types";
 
 export function AbstractsPage(): JSX.Element {
@@ -8,8 +9,7 @@ export function AbstractsPage(): JSX.Element {
   const [docs, setDocs] = useState<DocSummary[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  async function search(event: FormEvent): Promise<void> {
-    event.preventDefault();
+  async function runSearch(): Promise<void> {
     setError(null);
     try {
       setDocs(await searchDocs(query.trim()));
@@ -18,14 +18,19 @@ export function AbstractsPage(): JSX.Element {
     }
   }
 
+  function search(event: FormEvent): void {
+    event.preventDefault();
+    void runSearch();
+  }
+
   return (
     <div>
       <h1>Abstracts</h1>
-      <form className="search" onSubmit={(e) => void search(e)}>
+      <form className="search" onSubmit={search}>
         <input data-testid="doc-search" type="search" value={query} placeholder="Search papers" onChange={(e) => setQuery(e.target.value)} />
         <button type="submit">Search</button>
       </form>
-      {error !== null && <p className="issue">{error}</p>}
+      {error !== null && <LoadError message={error} retry={() => void runSearch()} />}
       {docs !== null && docs.length === 0 && <p className="muted">No papers found.</p>}
       {docs !== null && docs.length > 0 && (
         <ul className="docs">

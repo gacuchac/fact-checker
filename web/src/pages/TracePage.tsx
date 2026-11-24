@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { getTrace } from "../api";
 import { Badge } from "../components/Badge";
+import { LoadError } from "../components/LoadError";
 import { useLoad } from "../hooks";
 import { durationMs, formatDuration, formatTokens, llmPrompt } from "../spans";
 import type { Span } from "../types";
@@ -68,7 +69,7 @@ export function TracePage(): JSX.Element {
       <p><Link to="/traces">← All runs</Link></p>
       <h1>Trace {runId}</h1>
       {trace.state === "loading" && <p className="muted">Loading…</p>}
-      {trace.state === "error" && <p className="issue">{trace.message}</p>}
+      {trace.state === "error" && <LoadError message={trace.message} retry={trace.retry} />}
       {trace.state === "ready" && (
         <ol className="timeline">
           {trace.data.spans.map((span) => (
