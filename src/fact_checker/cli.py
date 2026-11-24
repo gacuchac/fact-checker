@@ -17,7 +17,7 @@ from fact_checker.contracts import (
     JudgeScores,
     Verdicts,
 )
-from fact_checker.finalize import finalize, rerun_queries
+from fact_checker.finalize import _finalize_with_results
 from fact_checker.index import build_index
 from fact_checker.report import render_answer, run_files
 from fact_checker.retrieve import retrieve
@@ -115,11 +115,17 @@ def _load_finalize_inputs(run: Path) -> tuple[ConfirmedStatements, Verdicts]:
     return confirmed, verdicts
 
 
+RUN_OUTPUTS = ("final.json", "scores.json", "transcript.md", "trace.jsonl", "checks.json")
+
+
+def _clear_outputs(run: Path) -> None:
+    for name in RUN_OUTPUTS:
+        (run / name).unlink(missing_ok=True)
+
+
 def _write_final(run: Path, confirmed: ConfirmedStatements, verdicts: Verdicts, db: Path) -> None:
-    final = finalize(confirmed, verdicts, db)
+    final, results = _finalize_with_results(confirmed, verdicts, db)
     (run / "final.json").write_text(final.model_dump_json(indent=2))
-    by_id = {sv.id: sv for sv in verdicts.statements}
-    results = {s.id: rerun_queries(by_id[s.id], db) for s in confirmed.statements}
     for name, text in run_files(confirmed, verdicts, final, results).items():
         (run / name).write_text(text)
 
@@ -127,6 +133,7 @@ def _write_final(run: Path, confirmed: ConfirmedStatements, verdicts: Verdicts, 
 def _finalize(args: argparse.Namespace) -> int:
     if not _has_run(args.run):
         return 1
+    _clear_outputs(args.run)
     if not args.db.exists():
         return _fail(args.run, "finalize", "index not found: run fc index")
     try:

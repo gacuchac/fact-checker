@@ -4,11 +4,11 @@ import shutil
 from pathlib import Path
 
 import pytest
-from fact_checker.report import render_answer
 
 from fact_checker.cli import main
 from fact_checker.contracts import FinalAnswer, JudgeScores
 from fact_checker.index import build_index
+from fact_checker.report import render_answer
 
 ROOT = Path(__file__).parent
 SPIKE6 = ROOT / "fixtures" / "spike6"
@@ -209,3 +209,41 @@ def test_us11_run_files_trace_one_line_per_query(tmp_path, full_db):
     assert all("kept" in q for st in checks["statements"] for q in st["quotes"])
     assert all(q["kept"] is True for st in checks["statements"] for q in st["quotes"])
     assert checks["overall"]["verdict"] == "contradicted"
+
+
+def test_fc02_failed_refinalize_leaves_no_stale_files_and_show_fails(tmp_path, full_db):
+    run = make_run(tmp_path)
+    assert main(["finalize", str(run), "--db", str(full_db)]) == 0
+    (run / "verdicts.json").write_text("{}")
+    assert main(["finalize", str(run), "--db", str(full_db)]) == 1
+    for name in ("final.json", "scores.json", "transcript.md", "trace.jsonl", "checks.json"):
+        assert not (run / name).exists(), name
+    assert main(["show", str(run)]) == 1
+
+
+def test_fc02_refinalize_drops_older_scores(tmp_path, full_db, capsys):
+    run = make_run(tmp_path)
+    assert main(["finalize", str(run), "--db", str(full_db)]) == 0
+    shutil.copy(REPORT / "scores.json", run / "scores.json")
+    assert main(["finalize", str(run), "--db", str(full_db)]) == 0
+    assert not (run / "scores.json").exists()
+    capsys.readouterr()
+    assert main(["show", str(run)]) == 0
+    assert "not judged" in capsys.readouterr().out
+
+
+def test_fc02_finalize_retrieves_each_query_once_and_trace_matches(tmp_path, full_db, monkeypatch):
+    from fact_checker import finalize as finalize_module
+
+    calls = []
+    real = finalize_module.retrieve
+
+    def counting(db, query, *args, **kwargs):
+        calls.append(query)
+        return real(db, query, *args, **kwargs)
+
+    monkeypatch.setattr(finalize_module, "retrieve", counting)
+    run = make_run(tmp_path, "V6")
+    assert main(["finalize", str(run), "--db", str(full_db)]) == 0
+    trace = [json.loads(line) for line in (run / "trace.jsonl").read_text().splitlines()]
+    assert sorted(calls) == sorted(t["query"] for t in trace)

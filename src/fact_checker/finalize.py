@@ -89,8 +89,10 @@ def aggregate(statements: list[FinalStatement]) -> Overall:
     return Overall(verdict="supported", rule=4)
 
 
-def _final_statement(statement: Statement, sv: StatementVerdict, db: Path) -> FinalStatement:
-    hits = statement_hits(rerun_queries(sv, db))
+def _final_statement(
+    statement: Statement, sv: StatementVerdict, results: list[RetrievalResult], db: Path
+) -> FinalStatement:
+    hits = statement_hits(results)
     verdict, reason, kept, dropped = ground_statement(statement, sv, hits)
     evidence = []
     for item, hit in kept:
@@ -118,15 +120,18 @@ def _final_statement(statement: Statement, sv: StatementVerdict, db: Path) -> Fi
     )
 
 
-def finalize(confirmed: ConfirmedStatements, verdicts: Verdicts, db: Path) -> FinalAnswer:
-    """Return the checked answer: each statement grounded against its own re-retrieved passages, then aggregated.
+def _finalize_with_results(
+    confirmed: ConfirmedStatements, verdicts: Verdicts, db: Path
+) -> tuple[FinalAnswer, dict[int, list[RetrievalResult]]]:
+    """Return the final answer and, by statement id, the retrievals it was grounded on (one pass per query).
 
     Raises ValueError if the verdict ids differ from the confirmed ids and FileNotFoundError if db is missing.
     """
     by_id = {sv.id: sv for sv in verdicts.statements}
     if set(by_id) != {s.id for s in confirmed.statements}:
         raise ValueError("verdict ids must equal confirmed ids")
-    statements = [_final_statement(s, by_id[s.id], db) for s in confirmed.statements]
+    results = {s.id: rerun_queries(by_id[s.id], db) for s in confirmed.statements}
+    statements = [_final_statement(s, by_id[s.id], results[s.id], db) for s in confirmed.statements]
     marks = [s.mark for s in confirmed.statements]
     counts = Counts(
         confirmed=marks.count("confirmed"),
@@ -134,4 +139,13 @@ def finalize(confirmed: ConfirmedStatements, verdicts: Verdicts, db: Path) -> Fi
         user_added=marks.count("user_added"),
         dropped=sum(1 for e in confirmed.edits if e.op == "drop"),
     )
-    return FinalAnswer(claim=confirmed.claim, overall=aggregate(statements), statements=statements, counts=counts)
+    final = FinalAnswer(claim=confirmed.claim, overall=aggregate(statements), statements=statements, counts=counts)
+    return final, results
+
+
+def finalize(confirmed: ConfirmedStatements, verdicts: Verdicts, db: Path) -> FinalAnswer:
+    """Return the checked answer: each statement grounded against its own re-retrieved passages, then aggregated.
+
+    Raises ValueError if the verdict ids differ from the confirmed ids and FileNotFoundError if db is missing.
+    """
+    return _finalize_with_results(confirmed, verdicts, db)[0]
