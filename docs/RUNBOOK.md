@@ -4,7 +4,7 @@ The main session follows this procedure. All commands run from the project root 
 
 ## 1. Preflight
 - `codex login status` must report a logged-in session. Otherwise stop and tell the user.
-- `data/index.sqlite` must exist. Otherwise run `.venv/bin/fc index`.
+- `data/factcheck.sqlite` must exist. Otherwise run `.venv/bin/fc db build`.
 - Judge check: copy `tests/fixtures/spike6/V4/confirmed.json` and `verdicts.json` into a new `runs/preflight-<YYYYMMDD-HHMMSS>/`, then run
   `.venv/bin/fc finalize <run>` and `.venv/bin/fc judge <run>`. Both must exit 0; otherwise stop and tell the user.
 

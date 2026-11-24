@@ -88,7 +88,6 @@ SEARCH_SQL = (
     "SELECT passage_id, doc_id, title, -bm25(passages), text FROM passages "
     "WHERE passages MATCH ? ORDER BY bm25(passages), rowid"
 )
-META_PATTERN = re.compile(r"Authors: (.*)\. Published (\S+)\.$")
 
 
 def match_query(text: str) -> str:
@@ -122,15 +121,3 @@ def retrieve(db: Path, query: str, k: int = 5, per_doc: int = 2) -> RetrievalRes
                 break
     return RetrievalResult(query=query, k=k, per_doc=per_doc, hits=hits)
 
-
-def _meta_passage(db: Path, doc_id: str) -> tuple[list[str], str]:
-    """Return (authors, published date) parsed from the doc's #meta passage, or ([], "") if absent."""
-    con = sqlite3.connect(f"file:{db}?mode=ro", uri=True)
-    try:
-        row = con.execute("SELECT text FROM passages WHERE passage_id = ?", (f"{doc_id}#meta",)).fetchone()
-    finally:
-        con.close()
-    found = META_PATTERN.search(row[0]) if row else None
-    if not found:
-        return [], ""
-    return found.group(1).split(", "), found.group(2)

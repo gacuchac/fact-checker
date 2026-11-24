@@ -1,5 +1,7 @@
 """Ground the model's verdicts against re-retrieved passages and aggregate the overall verdict."""
 
+import json
+import sqlite3
 from pathlib import Path
 from typing import Literal
 
@@ -19,7 +21,7 @@ from fact_checker.contracts import (
     Verdicts,
 )
 from fact_checker.quotes import check_quote
-from fact_checker.retrieve import _meta_passage, retrieve
+from fact_checker.retrieve import retrieve
 
 DowngradeReason = Literal["quote_failed", "no_hits", "conflict"]
 Grounded = tuple[Verdict, DowngradeReason | None, list[tuple[Evidence, Hit]], list[Evidence]]
@@ -89,6 +91,16 @@ def aggregate(statements: list[FinalStatement]) -> Overall:
     return Overall(verdict="supported", rule=4)
 
 
+def _doc_meta(db: Path, doc_id: str) -> tuple[list[str], str]:
+    """Return (authors, published date as YYYY-MM-DD) of the doc from the docs table, or ([], "") if absent."""
+    con = sqlite3.connect(f"file:{db}?mode=ro", uri=True)
+    try:
+        row = con.execute("SELECT authors, published FROM docs WHERE doc_id = ?", (doc_id,)).fetchone()
+    finally:
+        con.close()
+    return (json.loads(row[0]), row[1][:10]) if row else ([], "")
+
+
 def _final_statement(
     statement: Statement, sv: StatementVerdict, results: list[RetrievalResult], db: Path
 ) -> FinalStatement:
@@ -96,7 +108,7 @@ def _final_statement(
     verdict, reason, kept, dropped = ground_statement(statement, sv, hits)
     evidence = []
     for item, hit in kept:
-        authors, published = _meta_passage(db, hit.doc_id)
+        authors, published = _doc_meta(db, hit.doc_id)
         evidence.append(
             FinalEvidence(
                 doc_id=hit.doc_id,
