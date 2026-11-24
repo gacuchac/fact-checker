@@ -69,6 +69,7 @@ def judge(final: FinalAnswer, run: Path) -> JudgeScores:
     checks.json as context. Raises ValueError on a non-zero exit or invalid output.
     """
     script = Path(os.environ.get("FC_CODEX_REVIEW", DEFAULT_CODEX_REVIEW)).expanduser()
+    run = run.resolve()
     model = os.environ.get("FC_JUDGE_MODEL", DEFAULT_MODEL)
     cmd = ["python3", str(script), "judge", "--model", model, "--run-dir", str(run)]
     for name in CONTEXT_FILES:

@@ -1,8 +1,10 @@
-You are judging the final answer of a claim fact-checker. You get final.json, the transcript, the trace (the
-passages retrieved for each statement, the verdicts, the quote checks, the aggregation) and the code checks.
+You are judging the final answer of a claim fact-checker. You get final.json, the transcript, the trace and the code checks.
+The passage text is in the transcript: for each statement it lists the queries, every retrieved passage in
+full, the verdict and reason, and each quote marked kept or dropped. The trace (trace.jsonl) lists the passage
+ids and doc ids each query returned, and the code checks (checks.json) hold the quote checks and the aggregation.
 There is no gold label; do not guess one. The user approved the statements: take them as given. Code already
 checked that quotes are verbatim and that the overall verdict was computed: don't re-check those mechanically.
-Judge only from the quotes and passages in the trace, never from your own knowledge of the papers.
+Judge only from the quotes and the passages in the transcript, never from your own knowledge of the papers.
 
 Score each dimension from 1 to 5, separately:
 1. evidence_relevance: does each quote bear on its statement, not just share keywords?
@@ -23,7 +25,7 @@ Flag a statement when your score of 3 or lower on a dimension is because of that
 dimension and a one-sentence reason that cites the quote.
 
 Output only this JSON:
-{"evidence_relevance": {"score": 0, "evidence": ""}, "statement_verdicts": {"score": 0, "evidence": ""},
+{"dimensions": {"evidence_relevance": {"score": 0, "evidence": ""}, "statement_verdicts": {"score": 0, "evidence": ""},
  "overreach": {"score": 0, "evidence": ""}, "conflict_handling": {"score": 0, "evidence": ""},
- "aggregation": {"score": 0, "evidence": ""}, "unknown_calibration": {"score": 0, "evidence": ""},
+ "aggregation": {"score": 0, "evidence": ""}, "unknown_calibration": {"score": 0, "evidence": ""}},
  "flagged": [{"statement_id": 0, "dimension": "", "reason": ""}]}

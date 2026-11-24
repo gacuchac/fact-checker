@@ -205,3 +205,19 @@ def test_us12_successful_rejudge_replaces_stale_scores(run, codex):
     scores = judge_ok(run, codex, sol_output({"aggregation": 5}))
     assert scores.model == "gpt-6-sol"
     assert scores.flagged == []
+
+
+def test_us12_relative_run_path_is_passed_to_codex_as_absolute(run, codex, monkeypatch):
+    monkeypatch.chdir(run.parent)
+    assert main(["judge", run.name]) == 0
+    cmd, _ = codex["calls"][0]
+    paths = [Path(cmd[i + 1]) for i, arg in enumerate(cmd) if arg in ("--run-dir", "--context-file")]
+    assert paths
+    assert all(p.is_absolute() for p in paths)
+    assert paths[0] == run.resolve()
+
+
+def test_us12_rubric_points_sol_to_the_transcript_for_passage_text():
+    rubric = (Path(__file__).resolve().parents[1] / ".claude" / "review-passes" / "judge.md").read_text()
+    assert "passage text is in the transcript" in rubric
+    assert '"dimensions"' in rubric
