@@ -207,3 +207,22 @@ def test_w1_full_docs_table_has_48_rows(tmp_path):
     db = tmp_path / "factcheck.sqlite"
     build_index(load_corpus(COMMITTED), db)
     assert len(doc_rows(db)) == 48
+
+
+def test_w1_rebuild_keeps_other_tables(tmp_path):
+    corpus = load_corpus(Path(__file__).resolve().parents[1] / "data" / "corpus.json")
+    db = tmp_path / "factcheck.sqlite"
+    build_index(corpus, db)
+    con = sqlite3.connect(db)
+    con.execute("CREATE TABLE runs (id TEXT PRIMARY KEY)")
+    con.execute("INSERT INTO runs VALUES ('r1')")
+    con.commit()
+    con.close()
+    stats = build_index(corpus, db)
+    con = sqlite3.connect(db)
+    try:
+        assert con.execute("SELECT id FROM runs").fetchall() == [("r1",)]
+        assert con.execute("SELECT count(*) FROM docs").fetchone()[0] == stats.docs
+        assert con.execute("SELECT count(*) FROM passages").fetchone()[0] == stats.passages
+    finally:
+        con.close()

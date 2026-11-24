@@ -43,12 +43,16 @@ def passages(doc: Doc) -> list[tuple[str, str, str, str]]:
 
 
 def build_index(corpus: Corpus, db: Path) -> IndexStats:
-    """Build the docs table and the FTS5 passage index at db from the corpus, replacing any existing file."""
+    """Build the docs table and the FTS5 passage index at db from the corpus.
+
+    Replaces only the docs and passages tables; any other table in db (the app's runs and events) is kept.
+    """
     db.parent.mkdir(parents=True, exist_ok=True)
-    db.unlink(missing_ok=True)
     rows = [row for doc in corpus.docs for row in passages(doc)]
     con = sqlite3.connect(db)
     try:
+        con.execute("DROP TABLE IF EXISTS docs")
+        con.execute("DROP TABLE IF EXISTS passages")
         con.execute(
             "CREATE TABLE docs (doc_id TEXT PRIMARY KEY, base_id TEXT, title TEXT, authors TEXT, "
             "published TEXT, abstract TEXT)"
