@@ -10,12 +10,12 @@ from fact_checker.contracts import (
     RetrievalResult,
     Verdicts,
 )
-from fact_checker.judge import PROJECT_ROOT, parse_scores
+from fact_checker.judge import parse_scores
 from fact_checker.llm.base import LLMClient, LLMError, Usage
 from fact_checker.report import run_files
+from fact_checker.services.loader import load_prompt
 from fact_checker.services.schemas import ReviewOutput
 
-DEFAULT_RUBRIC = PROJECT_ROOT / ".claude" / "review-passes" / "judge.md"
 CONTEXT_ORDER = ("transcript.md", "trace.jsonl", "checks.json")
 
 
@@ -25,6 +25,10 @@ def _transcript(files: Mapping[str, str], final: FinalAnswer) -> str:
     return "\n\n".join(sections)
 
 
+def _rubric(rubric_path: Path | None) -> str:
+    return load_prompt("review") if rubric_path is None else rubric_path.read_text(encoding="utf-8")
+
+
 def review(
     confirmed: ConfirmedStatements,
     verdicts: Verdicts,
@@ -32,18 +36,19 @@ def review(
     results: Mapping[int, list[RetrievalResult]],
     client: LLMClient,
     model: str,
-    rubric_path: Path = DEFAULT_RUBRIC,
+    rubric_path: Path | None = None,
 ) -> tuple[JudgeScores, Usage]:
     """Return the judge scores for the final answer and the usage of the one model call.
 
-    The system prompt is the rubric file at rubric_path; the user message is transcript.md, trace.jsonl,
+    The system prompt is the packaged rubric (prompts/review.md, identical to the Codex judge rubric), or the
+    file at rubric_path when given; the user message is transcript.md, trace.jsonl,
     checks.json and final.json. The model returns only dimensions and flags: model, seconds and
     needs_attention are set by parse_scores. Raises LLMError if the call fails or a flag names an unknown
     statement id, and FileNotFoundError if the rubric is missing.
     """
     files = run_files(confirmed, verdicts, final, results)
     output, usage = client.complete(
-        rubric_path.read_text(encoding="utf-8"), _transcript(files, final), ReviewOutput, model
+        _rubric(rubric_path), _transcript(files, final), ReviewOutput, model
     )
     try:
         scores = parse_scores(

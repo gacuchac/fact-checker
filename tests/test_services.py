@@ -332,3 +332,11 @@ def test_decompose_statement_zero_is_always_load_bearing():
     out = DecomposeOutput(statements=[decomposed("A beats B.", CLAIM, load_bearing=False)])
     statements, _ = decompose(CLAIM, FakeClient([out]), "opus", "high")
     assert statements[0].load_bearing is True
+
+
+def test_review_rubric_is_packaged_and_matches_the_codex_rubric():
+    from fact_checker.services.loader import load_prompt
+
+    root = Path(__file__).resolve().parents[1]
+    packaged = load_prompt("review")
+    assert packaged == (root / ".claude" / "review-passes" / "judge.md").read_text()
