@@ -2,6 +2,7 @@ import json
 from pathlib import Path
 
 import pytest
+
 from fact_checker.cli import main
 from fact_checker.contracts import RetrievalResult
 from fact_checker.corpus import Corpus, Doc
@@ -208,3 +209,9 @@ def test_us4_retrieve_cli_json_is_deterministic_on_full_corpus(full_db, capsys):
 def test_us5_photosynthesis_zero_hits_exit_0_on_full_corpus(full_db, capsys):
     assert main(["retrieve", "photosynthesis in plants", "--json", "--db", str(full_db)]) == 0
     assert RetrievalResult.model_validate_json(capsys.readouterr().out).hits == []
+
+
+def test_us4_stopwords_keep_domain_terms():
+    assert match_query("keyword retrieval of passages from the index") == (
+        '"keyword" OR "retrieval" OR "passages" OR "index"'
+    )
