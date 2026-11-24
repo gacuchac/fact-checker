@@ -37,19 +37,22 @@ class ClaudeClient:
         if effort is not None:
             output_config = {"effort": effort, **output_config}
         started = time.monotonic()
-        response = self._sdk().beta.messages.create(
-            model=model,
-            max_tokens=MAX_TOKENS,
-            betas=BETAS,
-            fallbacks="default",
-            system=system,
-            messages=[{"role": "user", "content": user}],
-            output_config=output_config,
-        )
+        try:
+            response = self._sdk().beta.messages.create(
+                model=model,
+                max_tokens=MAX_TOKENS,
+                betas=BETAS,
+                fallbacks="default",
+                system=system,
+                messages=[{"role": "user", "content": user}],
+                output_config=output_config,
+            )
+        except anthropic.APIError as error:
+            raise LLMError(f"Anthropic API call failed: {error}") from error
         seconds = time.monotonic() - started
         result = parse_output(_answer_text(response), schema)
         usage = Usage(
-            model=model,
+            model=response.model,
             input_tokens=response.usage.input_tokens,
             output_tokens=response.usage.output_tokens,
             seconds=seconds,

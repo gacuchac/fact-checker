@@ -2,6 +2,8 @@
 
 from types import SimpleNamespace
 
+import anthropic
+import openai
 import pytest
 from pydantic import BaseModel
 
@@ -66,6 +68,7 @@ class Answer(BaseModel):
 
 def _claude_response(text="{\"value\": 7}", stop_reason="end_turn", stop_details=None):
     return SimpleNamespace(
+        model="claude-served",
         stop_reason=stop_reason,
         stop_details=stop_details,
         content=[SimpleNamespace(type="thinking"), SimpleNamespace(type="text", text=text)],
@@ -89,7 +92,7 @@ def test_claude_request_shape_and_success():
     client, calls = _claude(_claude_response())
     result, usage = client.complete("sys", "usr", Answer, "claude-x", "high")
     assert result == Answer(value=7)
-    assert (usage.model, usage.input_tokens, usage.output_tokens) == ("claude-x", 11, 5)
+    assert (usage.model, usage.input_tokens, usage.output_tokens) == ("claude-served", 11, 5)
     assert usage.seconds >= 0
     assert calls == [
         {
@@ -142,6 +145,7 @@ def test_claude_no_text_block():
 
 def _openai_response(text="{\"value\": 7}", output=()):
     return SimpleNamespace(
+        model="gpt-served",
         output=list(output),
         output_text=text,
         usage=SimpleNamespace(input_tokens=21, output_tokens=9),
@@ -164,7 +168,7 @@ def test_openai_request_shape_and_success():
     client, calls = _openai(_openai_response())
     result, usage = client.complete("sys", "usr", Answer, "gpt-x", "high")
     assert result == Answer(value=7)
-    assert (usage.model, usage.input_tokens, usage.output_tokens) == ("gpt-x", 21, 9)
+    assert (usage.model, usage.input_tokens, usage.output_tokens) == ("gpt-served", 21, 9)
     assert calls == [
         {
             "model": "gpt-x",
@@ -255,3 +259,42 @@ def test_fake_client_returns_in_order_and_records():
 def test_fake_client_exhausted():
     with pytest.raises(LLMError):
         FakeClient([]).complete("s", "u", Answer, "m")
+
+
+def _api_error(module):
+    return module.APIError("down", request=SimpleNamespace(headers={}), body=None)
+
+
+def test_claude_sdk_error_becomes_llm_error():
+    client, _ = _claude(None)
+    client._client.beta.messages.create = lambda **_: (_ for _ in ()).throw(_api_error(anthropic))
+    with pytest.raises(LLMError) as raised:
+        client.complete("s", "u", Answer, "m")
+    assert isinstance(raised.value.__cause__, anthropic.APIError)
+
+
+def test_claude_unrelated_error_escapes():
+    client, _ = _claude(None)
+    client._client.beta.messages.create = lambda **_: (_ for _ in ()).throw(KeyError("x"))
+    with pytest.raises(KeyError):
+        client.complete("s", "u", Answer, "m")
+
+
+def test_openai_sdk_error_becomes_llm_error():
+    client, _ = _openai(None)
+    client._client.responses.create = lambda **_: (_ for _ in ()).throw(_api_error(openai))
+    with pytest.raises(LLMError) as raised:
+        client.complete("s", "u", Answer, "m")
+    assert isinstance(raised.value.__cause__, openai.APIError)
+
+
+def test_openai_unrelated_error_escapes():
+    client, _ = _openai(None)
+    client._client.responses.create = lambda **_: (_ for _ in ()).throw(KeyError("x"))
+    with pytest.raises(KeyError):
+        client.complete("s", "u", Answer, "m")
+
+
+def test_fake_client_rejects_wrong_schema_instance():
+    with pytest.raises(LLMError):
+        FakeClient([Inner(name="a")]).complete("s", "u", Answer, "m")

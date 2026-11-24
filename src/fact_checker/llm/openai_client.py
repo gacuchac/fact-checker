@@ -7,7 +7,13 @@ from typing import Any
 import openai
 from pydantic import BaseModel
 
-from fact_checker.llm.base import LLMRefusal, Usage, parse_output, strict_json_schema
+from fact_checker.llm.base import (
+    LLMError,
+    LLMRefusal,
+    Usage,
+    parse_output,
+    strict_json_schema,
+)
 
 
 class OpenAIClient:
@@ -38,12 +44,15 @@ class OpenAIClient:
         if effort is not None:
             kwargs["reasoning"] = {"effort": effort}
         started = time.monotonic()
-        response = self._sdk().responses.create(**kwargs)
+        try:
+            response = self._sdk().responses.create(**kwargs)
+        except openai.APIError as error:
+            raise LLMError(f"OpenAI API call failed: {error}") from error
         seconds = time.monotonic() - started
         _raise_on_refusal(response)
         result = parse_output(response.output_text, schema)
         usage = Usage(
-            model=model,
+            model=response.model,
             input_tokens=response.usage.input_tokens,
             output_tokens=response.usage.output_tokens,
             seconds=seconds,

@@ -36,4 +36,6 @@ class FakeClient:
         item = self._queue.pop(0)
         if isinstance(item, Exception):
             raise item
+        if not isinstance(item, schema):
+            raise LLMError(f"queued {type(item).__name__} is not a {schema.__name__}")
         return item, Usage(model=model, input_tokens=0, output_tokens=0, seconds=0.0)
