@@ -19,7 +19,7 @@ from fact_checker.store import (
     get_run,
     list_runs,
     list_spans,
-    update_run,
+    transition_status,
 )
 
 from .security import limit_posts, require_access_code
@@ -109,14 +109,19 @@ def post_confirm(run_id: str, body: ConfirmRequest, request: Request):
     return {"confirmed": outcome.model_dump()}
 
 
+VERIFIED_STATUSES = ("verifying", "done", "failed")
+
+
 @router.post("/api/claims/{run_id}/verify", status_code=202)
 def post_verify(run_id: str, request: Request, background: BackgroundTasks) -> dict:
     """Start the check of a confirmed run in the background: 202, 409 unless confirmed, 429 over the daily cap, 404."""
     state = request.app.state
     _require_status(_run_or_404(request, run_id).status, "confirmed")
-    if count_runs_since(state.db, _start_of_today()) >= state.settings.daily_run_cap:
+    verified_today = count_runs_since(state.db, _start_of_today(), statuses=VERIFIED_STATUSES)
+    if verified_today >= state.settings.daily_run_cap:
         raise HTTPException(status_code=429, detail="daily run cap reached, try again tomorrow")
-    update_run(state.db, run_id, status="verifying", error=None)
+    if not transition_status(state.db, run_id, "confirmed", "verifying"):
+        raise HTTPException(status_code=409, detail="run is already being verified")
     background.add_task(
         verify_claim, state.db, run_id, state.clients.verify, state.clients.review, state.settings
     )
