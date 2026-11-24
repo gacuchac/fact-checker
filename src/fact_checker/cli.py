@@ -19,6 +19,7 @@ from fact_checker.contracts import (
 )
 from fact_checker.finalize import _finalize_with_results
 from fact_checker.index import build_index
+from fact_checker.judge import judge
 from fact_checker.report import render_answer, run_files
 from fact_checker.retrieve import retrieve
 
@@ -164,6 +165,21 @@ def _show(args: argparse.Namespace) -> int:
     return 0
 
 
+def _judge(args: argparse.Namespace) -> int:
+    if not _has_run(args.run):
+        return 1
+    (args.run / "scores.json").unlink(missing_ok=True)
+    final_path = args.run / "final.json"
+    try:
+        final = FinalAnswer.model_validate_json(final_path.read_text())
+        scores = judge(final, args.run)
+    except (OSError, ValidationError, ValueError) as exc:
+        return _fail(args.run, "judge", exc)
+    (args.run / "scores.json").write_text(scores.model_dump_json(indent=2))
+    _log_event(args.run, "judge", True, final_sha256=_sha256(final_path), model=scores.model)
+    return 0
+
+
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="fc")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -203,6 +219,10 @@ def _parser() -> argparse.ArgumentParser:
     show = sub.add_parser("show", help="print the final answer of a run")
     show.add_argument("run", type=Path)
     show.set_defaults(handler=_show)
+
+    judged = sub.add_parser("judge", help="score the final answer of a run with Sol")
+    judged.add_argument("run", type=Path)
+    judged.set_defaults(handler=_judge)
     return parser
 
 
