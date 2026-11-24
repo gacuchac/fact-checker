@@ -40,7 +40,8 @@ def confirm_claim(
 ) -> ConfirmedStatements | list[Issue]:
     """Apply the user's edits to the run's proposed statements and check the edited ones.
 
-    Records a user span "edits" and an llm span "falsifiability" per checked statement. Returns the
+    Records a user span "edits" and an llm span "falsifiability" per checked statement, and on success a
+    user span "approval" naming the confirmed statement ids. Returns the
     confirmed statements, stored with status confirmed, or the issues when a statement is not falsifiable
     (the run stays proposed). Raises KeyError for an unknown run and ValueError for an edit naming an unknown
     statement or a run that has no proposed statements.
@@ -59,6 +60,7 @@ def confirm_claim(
     if issues:
         return issues
     update_run(db, run_id, confirmed=checked, status="confirmed")
+    tracer.record("user", "approval", {"statement_ids": [s.id for s in checked.statements]}, None)
     return checked
 
 

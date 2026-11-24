@@ -142,6 +142,7 @@ def test_full_session_with_revision_traces_every_step_in_order(db):
         ("user", "claim"),
         ("llm", "decompose"),
         ("user", "edits"),
+        ("user", "approval"),
         ("tool", "retrieve"),
         ("tool", "retrieve"),
         ("llm", "verify"),
@@ -158,14 +159,14 @@ def test_full_session_with_revision_traces_every_step_in_order(db):
     ]
     assert spans[0].input == {"claim": CLAIM}
     assert spans[1].input["schema"] == "DecomposeOutput" and spans[1].model == "opus"
-    finalize_first, finalize_second = spans[6], spans[11]
+    finalize_first, finalize_second = spans[7], spans[12]
     assert finalize_first.output["overall"] == {"verdict": "contradicted", "rule": 2}
     assert finalize_second.output["overall"] == {"verdict": "unknown", "rule": 3}
     statement = finalize_first.output["statements"][0]
     assert statement["downgrade_reason"] is None and statement["dropped_quotes"] == []
     assert statement["kept_quotes"][0]["quote"].startswith("LongAlign outperforms")
     assert finalize_first.input["verdicts"]["statements"][0]["id"] == 0
-    for parent, children in ((finalize_first, spans[7:9]), (finalize_second, spans[12:14])):
+    for parent, children in ((finalize_first, spans[8:10]), (finalize_second, spans[13:15])):
         assert all(c.parent_id == parent.id for c in children)
         assert [c.input["query"] for c in children] == [
             f"{s.text} {s.query}" for s in v6_confirmed().statements

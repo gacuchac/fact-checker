@@ -8,6 +8,7 @@ import sys
 import time
 from pathlib import Path
 
+import uvicorn
 import yaml
 from pydantic import ValidationError
 
@@ -234,6 +235,11 @@ def _eval_score(args: argparse.Namespace) -> int:
     return 0
 
 
+def _serve(args: argparse.Namespace) -> int:
+    uvicorn.run("fact_checker.api.app:create_app_from_env", factory=True, host=args.host, port=args.port)
+    return 0
+
+
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="fc")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -284,6 +290,11 @@ def _parser() -> argparse.ArgumentParser:
     judged = sub.add_parser("judge", help="score the final answer of a run with Sol")
     judged.add_argument("run", type=Path)
     judged.set_defaults(handler=_judge)
+
+    serve = sub.add_parser("serve", help="run the web API (and the built web app, if any)")
+    serve.add_argument("--host", default="127.0.0.1")
+    serve.add_argument("--port", type=int, default=8000)
+    serve.set_defaults(handler=_serve)
 
     evaluate = sub.add_parser("eval", help="prepare and score the seed eval cases")
     eval_sub = evaluate.add_subparsers(dest="eval_command", required=True)
