@@ -95,6 +95,18 @@ def _kept_and_dropped(final: FinalAnswer) -> dict:
     }
 
 
+def _record_retrievals(tracer: Tracer, parent_id: str, results: Results) -> None:
+    for per_statement in results.values():
+        for result in per_statement:
+            tracer.record(
+                "tool",
+                "retrieve",
+                {"query": result.query, "k": result.k, "per_doc": result.per_doc},
+                {"hits": [hit.model_dump() for hit in result.hits]},
+                parent_id=parent_id,
+            )
+
+
 def _ground(
     confirmed: ConfirmedStatements, verdicts: Verdicts, db: Path, tracer: Tracer | None
 ) -> tuple[FinalAnswer, Results, Event]:
@@ -105,6 +117,7 @@ def _ground(
         with tracer.span("code", "finalize", {"verdicts": verdicts.model_dump()}) as handle:
             final, results = _finalize_with_results(confirmed, verdicts, db)
             handle.output = _kept_and_dropped(final)
+            _record_retrievals(tracer, handle.id, results)
     sha = hashlib.sha256(final.model_dump_json().encode()).hexdigest()
     event = Event(
         step="finalize", ok=True, seconds=time.monotonic() - started, doc_ids=_doc_ids(results), final_sha256=sha

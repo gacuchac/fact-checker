@@ -146,21 +146,32 @@ def test_full_session_with_revision_traces_every_step_in_order(db):
         ("tool", "retrieve"),
         ("llm", "verify"),
         ("code", "finalize"),
+        ("tool", "retrieve"),
+        ("tool", "retrieve"),
         ("llm", "review"),
         ("llm", "revise"),
         ("code", "finalize"),
+        ("tool", "retrieve"),
+        ("tool", "retrieve"),
         ("llm", "review"),
         ("system", "final_message"),
     ]
     assert spans[0].input == {"claim": CLAIM}
     assert spans[1].input["schema"] == "DecomposeOutput" and spans[1].model == "opus"
-    finalize_first, finalize_second = spans[6], spans[9]
+    finalize_first, finalize_second = spans[6], spans[11]
     assert finalize_first.output["overall"] == {"verdict": "contradicted", "rule": 2}
     assert finalize_second.output["overall"] == {"verdict": "unknown", "rule": 3}
     statement = finalize_first.output["statements"][0]
     assert statement["downgrade_reason"] is None and statement["dropped_quotes"] == []
     assert statement["kept_quotes"][0]["quote"].startswith("LongAlign outperforms")
     assert finalize_first.input["verdicts"]["statements"][0]["id"] == 0
+    for parent, children in ((finalize_first, spans[7:9]), (finalize_second, spans[12:14])):
+        assert all(c.parent_id == parent.id for c in children)
+        assert [c.input["query"] for c in children] == [
+            f"{s.text} {s.query}" for s in v6_confirmed().statements
+        ]
+        assert children[0].input["k"] == 5 and children[0].input["per_doc"] == 2
+        assert children[0].output["hits"][0]["passage_id"]
     assert spans[-1].output["message"] == run.result["final_message"]
 
 
@@ -191,6 +202,13 @@ def test_verify_failure_marks_the_run_failed(db):
     verify_claim(db, run_id, FakeClient([LLMError("api down")]), FakeClient([]), settings())
     run = get_run(db, run_id)
     assert run.status == "failed" and "api down" in run.error and run.result is None
+
+
+def test_start_claim_creates_the_store_tables_itself(corpus_db, tmp_path):
+    path = tmp_path / "bare.sqlite"
+    path.write_bytes(corpus_db.read_bytes())
+    run_id, _ = start_claim(path, CLAIM, FakeClient([decompose_output()]), settings())
+    assert get_run(path, run_id).status == "proposed"
 
 
 def test_start_claim_failure_marks_the_run_failed(db):

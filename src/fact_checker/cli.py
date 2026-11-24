@@ -25,6 +25,7 @@ from fact_checker.index import build_index
 from fact_checker.judge import judge
 from fact_checker.report import render_answer, run_files
 from fact_checker.retrieve import retrieve
+from fact_checker.store import init_store
 
 DATA_DIR = Path(__file__).resolve().parents[2] / "data"
 DEFAULT_CORPUS = DATA_DIR / "corpus.json"
@@ -54,6 +55,7 @@ def _index(args: argparse.Namespace) -> int:
         print(f"corpus not found: {args.corpus}: run fc fetch", file=sys.stderr)
         return 1
     stats = build_index(corpus.load_corpus(args.corpus), args.db)
+    init_store(args.db)
     print(f"indexed {stats.docs} docs, {stats.passages} passages")
     return 0
 

@@ -9,18 +9,19 @@ from fact_checker.llm.config import Settings
 from fact_checker.services.confirm import Issue, apply_edits, check_statements
 from fact_checker.services.decompose import decompose
 from fact_checker.services.pipeline import run_check
-from fact_checker.store import create_run, get_run, update_run
+from fact_checker.store import create_run, get_run, init_store, update_run
 from fact_checker.tracing import Tracer, TracingClient
 
 
 def start_claim(
     db: Path, claim: str, decompose_client: LLMClient, settings: Settings
 ) -> tuple[str, list[Statement]]:
-    """Create a run for the claim, decompose it, and return the run id and the proposed statements.
+    """Create the run store tables if missing, create a run for the claim, decompose it, and return the run id and the proposed statements.
 
     Records a user span "claim" and an llm span "decompose", stores the proposed statements and leaves the
     status proposed. If decomposition fails the run is marked failed with the error, and the error is raised.
     """
+    init_store(db)
     run_id = create_run(db, claim)
     tracer = Tracer(db, run_id)
     tracer.record("user", "claim", {"claim": claim}, None)
