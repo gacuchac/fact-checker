@@ -105,6 +105,7 @@ export interface CheckResult {
   first_scores: JudgeScores | null;
   revised: boolean;
   final_message: string;
+  consistency_flags?: Flag[];
 }
 
 export interface ProposedClaim {

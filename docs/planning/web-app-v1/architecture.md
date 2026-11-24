@@ -1,6 +1,6 @@
 # Architecture: web-app-v1
 
-Status: approved (2026-11-24; user: "let's use railways", deployment on Railway with an access code; amended the same day at the user's request: full tracing, a revision step after the review, and autonomous build and deployment)
+Status: approved (2026-11-24; user: "let's use railways", deployment on Railway with an access code; amended the same day at the user's request: full tracing, a revision step after the review, and autonomous build and deployment; amended again after a live false unknown, user: "fix it and test it": a claim search per statement and a code consistency check that can trigger the revision)
 
 Goal: a light local web app. You type a claim, review and approve the statements in the browser, and get the verdict with exact quotes and the review. The app calls the models directly: the **Claude API** for decomposition and verdicts, and the **OpenAI API** for the Sol review. The abstracts live in a SQLite database. Claude Code subagents are no longer part of the flow.
 
@@ -45,7 +45,7 @@ Goal: a light local web app. You type a claim, review and approve the statements
 | `verify(confirmed, db, client) -> Verdicts` | Sonnet 5.5, effort high | the claim-verifier subagent |
 | `review(final, run_text, client) -> JudgeScores` | GPT-6 Sol | `fc judge` going through Codex (the rubric text is reused and parsed with `parse_scores`) |
 | `revise(confirmed, verdicts, final, results, scores, client)` | Sonnet 5.5, effort high | (new) Claude revises its verdicts from Sol's flags and reasoning, using the same passages |
-| `run_check(confirmed, db, clients, settings, tracer)` | – | verify, then `finalize`, then review. If `needs_attention`, one revision round: revise, `finalize`, review again. Then the final message |
+| `run_check(confirmed, db, clients, settings, tracer)` | – | verify, then `finalize`, the code consistency check, then review. If `needs_attention` or a code flag, one revision round: revise, `finalize`, review again. Then the final message |
 
 **How the verifier searches (decision V).** Code runs `retrieve` twice per statement, once for `text + query` and once for the user's own claim (k=5, per_doc=2 each), and gives the statement the union of the passages; the claim search was added after a live run where a reworded statement missed the abstract's key sentence. Then one batched Sonnet call returns the verdicts for every statement, each against its own passages, which is the spike-6b setup that passed 6/6. `queries[]` records what code ran, and `finalize` re-runs those same queries. There is no model-driven tool loop in v1, so the app makes 3 model calls per claim (decompose, verify, review), plus one for each edited statement.
 
@@ -56,7 +56,7 @@ Goal: a light local web app. You type a claim, review and approve the statements
 - `user`: the claim; the statement edits and approval.
 - `llm`: decompose, each falsifiability check, verify, review (Sol), revise, and the second review. Each stores the full system prompt, the user message, the schema name, model, effort, the raw output text, the parsed output, the tokens, the latency, and the model that actually served it.
 - `tool`: every `retrieve` call, with the query, k, per_doc and every passage returned.
-- `code`: `finalize`, with the quote checks, the dropped quotes, the downgrades and the rule that fired.
+- `code`: `finalize`, with the quote checks, the dropped quotes, the downgrades and the rule that fired; `consistency`, with the code flags of the first answer.
 - `system`: the final message sent to the user.
 
 **How it's recorded.**
@@ -65,7 +65,8 @@ Goal: a light local web app. You type a claim, review and approve the statements
 - The services take the tracer as a parameter: no hidden state, and tests use an in-memory store.
 
 **The revision step.** This replaces D1's "flags never change a verdict" for the app.
-- When Sol's review sets `needs_attention`, `revise` gives Sonnet the confirmed statements, its earlier verdicts, the same passages, and Sol's scores, evidence and flags. Sonnet returns new `Verdicts`.
+- **Code consistency check** (`one_sided_unknowns`, after the first `finalize`): a statement the model left `unknown`, with no downgrade by code, whose kept quotes all take one stance gets an `unknown_calibration` flag that says so. The flags are kept in the result as `consistency_flags`.
+- When Sol's review sets `needs_attention`, or the code check raised a flag (and the review itself succeeded), `revise` gives Sonnet the confirmed statements, its earlier verdicts, the same passages, and Sol's scores, evidence and flags plus the code flags. Sonnet returns new `Verdicts`.
 - `finalize` then re-checks every quote and re-applies the rules, so code still has the final say.
 - Sol reviews once more. That is one round at most.
 - Both versions are kept in the run and the trace, and the UI shows that the answer was revised and why.
