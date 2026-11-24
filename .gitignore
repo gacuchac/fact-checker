@@ -6,5 +6,5 @@ __pycache__/
 .humanlayer/
 docs/planning/*/spikes/
 runs/
-data/index.sqlite
+data/factcheck.sqlite
 *.egg-info/

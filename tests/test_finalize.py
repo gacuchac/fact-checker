@@ -3,8 +3,6 @@ import re
 from pathlib import Path
 
 import pytest
-from fact_checker.finalize import aggregate, finalize, ground_statement, rerun_queries
-from fact_checker.quotes import check_quote
 
 from fact_checker.contracts import (
     ConfirmedStatements,
@@ -15,7 +13,9 @@ from fact_checker.contracts import (
     StatementVerdict,
     Verdicts,
 )
+from fact_checker.finalize import aggregate, finalize, ground_statement, rerun_queries
 from fact_checker.index import build_index
+from fact_checker.quotes import check_quote
 
 ROOT = Path(__file__).parent
 SPIKE6 = ROOT / "fixtures" / "spike6"
@@ -296,3 +296,21 @@ def test_us9_ground_statement_different_docs_both_stances_is_conflict():
     verdict, reason, kept, _ = ground_statement(statement, sv, hits)
     assert (verdict, reason) == ("unknown", "conflict")
     assert len(kept) == 2
+
+
+@pytest.mark.integration
+def test_w1_finalize_metadata_comes_from_docs_table(full_db):
+    import sqlite3
+
+    confirmed, verdicts, _ = load("V1")
+    final = finalize(confirmed, verdicts, full_db)
+    con = sqlite3.connect(full_db)
+    try:
+        for ev in (e for s in final.statements for e in s.evidence):
+            authors, published = con.execute(
+                "SELECT authors, published FROM docs WHERE doc_id = ?", (ev.doc_id,)
+            ).fetchone()
+            assert ev.authors == json.loads(authors)
+            assert ev.published == published[:10]
+    finally:
+        con.close()

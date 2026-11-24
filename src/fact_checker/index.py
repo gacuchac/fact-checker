@@ -1,5 +1,6 @@
-"""The FTS5 passage index built from the corpus."""
+"""The abstracts database built from the corpus: the docs table and the FTS5 passage index."""
 
+import json
 import re
 import sqlite3
 from pathlib import Path
@@ -42,12 +43,23 @@ def passages(doc: Doc) -> list[tuple[str, str, str, str]]:
 
 
 def build_index(corpus: Corpus, db: Path) -> IndexStats:
-    """Build the FTS5 passage index at db from the corpus, replacing any existing file."""
+    """Build the docs table and the FTS5 passage index at db from the corpus, replacing any existing file."""
     db.parent.mkdir(parents=True, exist_ok=True)
     db.unlink(missing_ok=True)
     rows = [row for doc in corpus.docs for row in passages(doc)]
     con = sqlite3.connect(db)
     try:
+        con.execute(
+            "CREATE TABLE docs (doc_id TEXT PRIMARY KEY, base_id TEXT, title TEXT, authors TEXT, "
+            "published TEXT, abstract TEXT)"
+        )
+        con.executemany(
+            "INSERT INTO docs VALUES (?, ?, ?, ?, ?, ?)",
+            [
+                (d.doc_id, d.base_id, d.title, json.dumps(d.authors), d.published, d.abstract)
+                for d in corpus.docs
+            ],
+        )
         con.execute(
             "CREATE VIRTUAL TABLE passages USING fts5("
             "passage_id UNINDEXED, doc_id UNINDEXED, title UNINDEXED, text, tokenize='porter unicode61')"
