@@ -132,8 +132,8 @@ One Railway service runs `uvicorn` with `fact_checker.api.app:create_app_from_en
 | Setting | Value |
 | --- | --- |
 | Builder | Railpack (Python from `pyproject.toml`), with `RAILPACK_PACKAGES=node@22` for the web build |
-| Build command | `python -m venv /app/.venv && /app/.venv/bin/pip install --no-cache-dir . && cd web && npm ci && npm run build` (a custom build command replaces Railpack's own Python install, so the package goes into a venv here) |
-| Start command | `/app/.venv/bin/uvicorn --factory fact_checker.api.app:create_app_from_env --host 0.0.0.0 --port 8080` (with `PORT=8080`) |
+| Build command | `python -m venv /app/pyenv && /app/pyenv/bin/pip install --no-cache-dir . && cd web && npm ci && npm run build` (a custom build command replaces Railpack's own Python install, so the package goes into a venv here; not `.venv`, which Railpack leaves out of the image by default) |
+| Start command | `/app/pyenv/bin/uvicorn --factory fact_checker.api.app:create_app_from_env --host 0.0.0.0 --port 8080` (with `PORT=8080`) |
 | Healthcheck | `/api/health` |
 | Variables | `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `FC_ACCESS_CODE`, `FC_DAILY_RUN_CAP`, the model names, `FC_DB=/data/factcheck.sqlite`, `FC_WEB_DIST=/app/web/dist`, `FC_CORPUS=/app/data/corpus.json` |
 
