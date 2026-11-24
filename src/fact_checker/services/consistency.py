@@ -8,7 +8,8 @@ def one_sided_unknowns(final: FinalAnswer) -> list[Flag]:
 
     Only the model's own unknown counts: a statement code downgraded (conflict, failed quote, no hits) is not
     flagged, and neither is one without kept quotes or with quotes of both stances. The reason names the stance
-    and asks for the verdict to change or for the part of the statement no quote covers.
+    and asks for the verdict to change or for the part of the statement no quote covers. Code cannot judge
+    whether the model's reason already names such a part, so a justified unknown still gets one more look.
     """
     flags = []
     for statement in final.statements:

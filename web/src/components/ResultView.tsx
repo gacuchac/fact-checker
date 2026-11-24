@@ -119,15 +119,18 @@ export function ResultView({ runId, result }: Props): JSX.Element {
           <button type="button" className="link" data-testid="first-answer-toggle" onClick={() => setShowFirst(!showFirst)}>
             {showFirst ? "Hide first answer" : "Show first answer"}
           </button>
-          {codeFlags.length > 0 && (
-            <ul data-testid="consistency-flags">
-              {codeFlags.map((flag) => (
-                <li key={flag.statement_id}>
-                  Statement {flag.statement_id}: {flag.reason}
-                </li>
-              ))}
-            </ul>
-          )}
+        </div>
+      )}
+      {codeFlags.length > 0 && (
+        <div className="callout warn" data-testid="consistency-flags">
+          Code consistency check on the first answer:
+          <ul>
+            {codeFlags.map((flag) => (
+              <li key={flag.statement_id}>
+                Statement {flag.statement_id}: {flag.reason}
+              </li>
+            ))}
+          </ul>
         </div>
       )}
       {result.revised && showFirst && (

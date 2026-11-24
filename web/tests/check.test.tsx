@@ -162,6 +162,24 @@ describe("Check page", () => {
     expect(screen.getByTestId("consistency-flags")).toHaveTextContent("Statement 1: Code check: every kept quote supports");
   });
 
+  it("shows the code flags even when the review failed and nothing was revised", async () => {
+    const result = checkResult({
+      scores: null,
+      review_error: "down",
+      consistency_flags: [{ statement_id: 0, dimension: "unknown_calibration", reason: "Code check: one-sided" }],
+    });
+    setup((url) => {
+      if (url.endsWith("/confirm")) return { body: { confirmed: {} } };
+      if (url.endsWith("/verify")) return { status: 202, body: { run_id: "r1", status: "verifying" } };
+      return { body: run({ status: "done", result }) };
+    });
+    await breakDown();
+    await userEvent.click(screen.getByTestId("approve-button"));
+    await screen.findByTestId("result-overall");
+    expect(screen.queryByTestId("revised-banner")).toBeNull();
+    expect(screen.getByTestId("consistency-flags")).toHaveTextContent("Statement 0: Code check: one-sided");
+  });
+
   it("shows no banner or needs-attention for a plain result", async () => {
     setup((url) => {
       if (url.endsWith("/confirm")) return { body: { confirmed: {} } };
