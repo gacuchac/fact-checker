@@ -56,6 +56,7 @@ class OpenAIClient:
             input_tokens=response.usage.input_tokens,
             output_tokens=response.usage.output_tokens,
             seconds=seconds,
+            raw_text=response.output_text,
         )
         return result, usage
 

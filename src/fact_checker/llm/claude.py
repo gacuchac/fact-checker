@@ -50,12 +50,14 @@ class ClaudeClient:
         except anthropic.APIError as error:
             raise LLMError(f"Anthropic API call failed: {error}") from error
         seconds = time.monotonic() - started
-        result = parse_output(_answer_text(response), schema)
+        text = _answer_text(response)
+        result = parse_output(text, schema)
         usage = Usage(
             model=response.model,
             input_tokens=response.usage.input_tokens,
             output_tokens=response.usage.output_tokens,
             seconds=seconds,
+            raw_text=text,
         )
         return result, usage
 

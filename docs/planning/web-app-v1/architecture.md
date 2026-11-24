@@ -1,6 +1,6 @@
 # Architecture: web-app-v1
 
-Status: approved (2026-11-24; user: "let's use railways", deployment on Railway with an access code)
+Status: approved (2026-11-24; user: "let's use railways", deployment on Railway with an access code; amended the same day at the user's request: full tracing, a revision step after the review, and autonomous build and deployment)
 
 Goal: a light local web app. You type a claim, review and approve the statements in the browser, and get the verdict with exact quotes and the review. The app calls the models directly: the **Claude API** for decomposition and verdicts, and the **OpenAI API** for the Sol review. The abstracts live in a SQLite database. Claude Code subagents are no longer part of the flow.
 
@@ -44,9 +44,35 @@ Goal: a light local web app. You type a claim, review and approve the statements
 | `apply_edits(proposed, edits) -> ConfirmedStatements` (pure) | – | the chat confirmation loop |
 | `verify(confirmed, db, client) -> Verdicts` | Sonnet 5.5, effort high | the claim-verifier subagent |
 | `review(final, run_text, client) -> JudgeScores` | GPT-6 Sol | `fc judge` going through Codex (the rubric text is reused and parsed with `parse_scores`) |
-| `run_check(run_id, store, clients)` | – | the runbook steps 5–6: verify, then `finalize`, then review, with events |
+| `revise(confirmed, verdicts, final, results, scores, client)` | Sonnet 5.5, effort high | (new) Claude revises its verdicts from Sol's flags and reasoning, using the same passages |
+| `run_check(confirmed, db, clients, settings, tracer)` | – | verify, then `finalize`, then review. If `needs_attention`, one revision round: revise, `finalize`, review again. Then the final message |
 
 **How the verifier searches (decision V).** Code runs `retrieve` once per statement (`text + query`, k=5, per_doc=2). Then one batched Sonnet call returns the verdicts for every statement, each against its own passages, which is the spike-6b setup that passed 6/6. `queries[]` records what code ran, and `finalize` re-runs those same queries. There is no model-driven tool loop in v1, so the app makes 3 model calls per claim (decompose, verify, review), plus one for each edited statement.
+
+### 3b. Tracing and the revision step (user decision, 2026-11-24)
+**What is traced.** Every step of a run is a span in the `spans` table of `data/factcheck.sqlite`: `id`, `run_id`, `parent_id`, `seq`, `kind`, `name`, `started_at`, `ended_at`, `status`, `model`, `input` (JSON), `output` (JSON), `usage` (JSON) and `error`. `kind` is one of `user`, `llm`, `tool`, `code` and `system`. One run is one trace.
+
+**The spans, in order:**
+- `user`: the claim; the statement edits and approval.
+- `llm`: decompose, each falsifiability check, verify, review (Sol), revise, and the second review. Each stores the full system prompt, the user message, the schema name, model, effort, the raw output text, the parsed output, the tokens, the latency, and the model that actually served it.
+- `tool`: every `retrieve` call, with the query, k, per_doc and every passage returned.
+- `code`: `finalize`, with the quote checks, the dropped quotes, the downgrades and the rule that fired.
+- `system`: the final message sent to the user.
+
+**How it's recorded.**
+- A `Tracer` (`src/fact_checker/tracing.py`) writes spans through a `SpanStore`.
+- A `TracingClient` wraps any `LLMClient` and records each call. The `retrieve` and `finalize` calls in the services are wrapped the same way.
+- The services take the tracer as a parameter: no hidden state, and tests use an in-memory store.
+
+**The revision step.** This replaces D1's "flags never change a verdict" for the app.
+- When Sol's review sets `needs_attention`, `revise` gives Sonnet the confirmed statements, its earlier verdicts, the same passages, and Sol's scores, evidence and flags. Sonnet returns new `Verdicts`.
+- `finalize` then re-checks every quote and re-applies the rules, so code still has the final say.
+- Sol reviews once more. That is one round at most.
+- Both versions are kept in the run and the trace, and the UI shows that the answer was revised and why.
+
+**The final message.** It is rendered by code (`render_answer`) from the last checked `FinalAnswer` and review, plus a line saying whether it was revised. No model writes free text that could stray from the checked quotes. It is stored as the `final_message` span.
+
+**Why our own tables and not Langfuse or MLflow.** Langfuse self-hosting needs Docker, Postgres and ClickHouse (and the exercise rules out Docker). Langfuse Cloud adds an account, more keys, and a third party that receives every prompt and abstract. MLflow needs a second hosted service with its own storage. A table in the database we already ship needs neither. The span fields follow the OpenTelemetry and Langfuse model, so an exporter could be added later without changing the services.
 
 ### 4. HTTP API (`src/fact_checker/api/`, FastAPI, served by `uvicorn`)
 | Endpoint | Does |
@@ -56,6 +82,7 @@ Goal: a light local web app. You type a claim, review and approve the statements
 | `POST /api/claims/{id}/verify` | 202; starts `run_check` in a background task |
 | `GET /api/claims/{id}` | status (`proposed`, `confirmed`, `verifying`, `done`, `failed`), the final answer, the scores, `needs_attention` and the events |
 | `GET /api/docs?q=` and `GET /api/docs/{doc_id}` | browse and search the abstracts database |
+| `GET /api/runs` and `GET /api/runs/{id}/trace` | list the runs; return one run's spans in order, for the traces page |
 
 No user accounts. Every `/api/*` route except `/api/health` requires the header `X-Access-Code`, which must equal env `FC_ACCESS_CODE`. If `FC_ACCESS_CODE` is unset, the check is off, which suits local development. A per-IP rate limit and env `FC_DAILY_RUN_CAP` (the number of claims verified per day) protect the API credit. In production, FastAPI serves the built React app from `web/dist` on the same origin. CORS is allowed only for the Vite dev origin.
 
@@ -66,7 +93,8 @@ No user accounts. Every `/api/*` route except `/api/health` requires the header 
   3. Approve.
   4. Progress while the run works.
   5. The result: the overall verdict and rule, then each statement with its verdict and its exact quotes (paper title, arXiv id, authors, date).
-  6. The review scores, with a **needs attention** panel showing Sol's reasoning (D1).
+  6. The review scores, with a **needs attention** panel showing Sol's reasoning and, when the answer was revised, the first and the revised verdicts side by side.
+- **Traces page:** the list of runs. Each run opens a timeline of its spans (kind, name, model, latency, tokens), and every span expands to show its full input and output.
 - **Abstracts page:** search the database and open a paper.
 
 ## PRs into dev (modular, one commit each, `pr` review only)
@@ -75,9 +103,10 @@ No user accounts. Every `/api/*` route except `/api/health` requires the header 
 | W1 | DB schema, `fc db build`, `docs` metadata in `finalize` | – |
 | W2 | LLM client layer and config (mocked tests) | – |
 | W3 | Services: decompose, falsifiability, apply_edits, verify, review, run_check (FakeClient tests) | W1, W2 |
-| W4 | FastAPI API and run store (TestClient tests) | W3 |
-| W5 | React app (Vitest tests): an access-code prompt kept in localStorage; the README section | W4 |
-| W6 | Railway deploy: `railway.json` build and start commands (install the package, `npm ci && npm run build` in `web/`, `fc db build`, then `uvicorn`), `/api/health`, `.env.example`. Deploying itself happens only when the user asks | W5 |
+| W4 | Tracing (`spans` table, `Tracer`, `TracingClient`), the `runs` store, `revise` and the revision round in `run_check`, and the final message | W3 |
+| W5 | FastAPI API: claims, confirm, verify, runs and trace, docs; access code, rate limit, daily cap (TestClient tests) | W4 |
+| W6 | React app (Vitest tests): the check flow, the traces page, the abstracts page, an access-code prompt | W5 |
+| W7 | Railway deploy (`railway.json`: install, `npm ci && npm run build`, `fc db build`, `uvicorn`), `/api/health`, then deploy and a Playwright end-to-end run against the live URL with a screenshot of every step | W6 |
 
 Each PR: the implementer writes tests and code together (no qa agent, no decomposer). The full suite must pass, plus a Codex `pr` pass with one fix round. Merged into `dev` locally with `--no-ff` under the bot's identity.
 
