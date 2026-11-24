@@ -28,7 +28,7 @@ from fact_checker.retrieve import retrieve
 
 DATA_DIR = Path(__file__).resolve().parents[2] / "data"
 DEFAULT_CORPUS = DATA_DIR / "corpus.json"
-DEFAULT_DB = DATA_DIR / "index.sqlite"
+DEFAULT_DB = DATA_DIR / "factcheck.sqlite"
 
 
 def _schema(args: argparse.Namespace) -> int:
@@ -98,7 +98,7 @@ def _retrieve(args: argparse.Namespace) -> int:
     try:
         result = retrieve(args.db, args.query, k=args.k)
     except FileNotFoundError:
-        print("index not found: run fc index", file=sys.stderr)
+        print("index not found: run fc db build", file=sys.stderr)
         if args.run:
             _log_event(args.run, "retrieve", False)
         return 1
@@ -139,7 +139,7 @@ def _finalize(args: argparse.Namespace) -> int:
         return 1
     _clear_outputs(args.run)
     if not args.db.exists():
-        return _fail(args.run, "finalize", "index not found: run fc index")
+        return _fail(args.run, "finalize", "index not found: run fc db build")
     try:
         confirmed, verdicts = _load_finalize_inputs(args.run)
     except (OSError, ValidationError) as exc:
@@ -244,10 +244,17 @@ def _parser() -> argparse.ArgumentParser:
     fetch.add_argument("--corpus", type=Path, default=DEFAULT_CORPUS)
     fetch.set_defaults(handler=_fetch)
 
-    index = sub.add_parser("index", help="build the FTS5 index from the corpus")
+    index = sub.add_parser("index", help="build the abstracts database from the corpus (alias of fc db build)")
     index.add_argument("--corpus", type=Path, default=DEFAULT_CORPUS)
     index.add_argument("--db", type=Path, default=DEFAULT_DB)
     index.set_defaults(handler=_index)
+
+    database = sub.add_parser("db", help="manage the abstracts database")
+    db_sub = database.add_subparsers(dest="db_command", required=True)
+    build = db_sub.add_parser("build", help="build the abstracts database from the corpus (same as fc index)")
+    build.add_argument("--corpus", type=Path, default=DEFAULT_CORPUS)
+    build.add_argument("--db", type=Path, default=DEFAULT_DB)
+    build.set_defaults(handler=_index)
 
     search = sub.add_parser("retrieve", help="retrieve passages for a query")
     search.add_argument("query")

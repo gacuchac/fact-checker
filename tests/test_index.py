@@ -1,7 +1,9 @@
+import json
 import sqlite3
 from pathlib import Path
 
 import pytest
+
 from fact_checker.cli import main
 from fact_checker.corpus import Corpus, Doc, load_corpus, save_corpus
 from fact_checker.index import IndexStats, build_index, passages, sentences
@@ -151,3 +153,91 @@ def test_us3_index_cli_exit_0_on_committed_corpus(tmp_path):
     db = tmp_path / "index.sqlite"
     assert main(["index", "--corpus", str(COMMITTED), "--db", str(db)]) == 0
     assert db.exists()
+
+
+def doc_rows(db):
+    con = sqlite3.connect(db)
+    try:
+        return con.execute("SELECT doc_id, base_id, title, authors, published, abstract FROM docs ORDER BY doc_id").fetchall()
+    finally:
+        con.close()
+
+
+def test_w1_build_index_writes_docs_table(tmp_path):
+    d1 = doc()
+    d2 = doc("2222.00002v3", "Beta Title", "Alone sentence here.")
+    db = tmp_path / "factcheck.sqlite"
+    build_index(corpus(d1, d2), db)
+    assert doc_rows(db) == [
+        (d.doc_id, d.base_id, d.title, json.dumps(d.authors), d.published, d.abstract) for d in (d1, d2)
+    ]
+
+
+def test_w1_docs_doc_id_is_primary_key(tmp_path):
+    db = tmp_path / "factcheck.sqlite"
+    build_index(corpus(doc()), db)
+    con = sqlite3.connect(db)
+    try:
+        pk = [r[1] for r in con.execute("PRAGMA table_info(docs)") if r[5]]
+    finally:
+        con.close()
+    assert pk == ["doc_id"]
+
+
+def test_w1_db_build_cli_same_as_index(tmp_path, capsys):
+    src, db = tmp_path / "corpus.json", tmp_path / "factcheck.sqlite"
+    save_corpus(corpus(doc()), src)
+    assert main(["db", "build", "--corpus", str(src), "--db", str(db)]) == 0
+    assert "indexed 1 docs, 4 passages" in capsys.readouterr().out
+    assert len(doc_rows(db)) == 1
+
+
+def test_w1_db_build_cli_missing_corpus_exits_1(tmp_path):
+    assert main(["db", "build", "--corpus", str(tmp_path / "none.json"), "--db", str(tmp_path / "x.sqlite")]) == 1
+
+
+def test_w1_default_db_is_factcheck_sqlite():
+    from fact_checker.cli import DEFAULT_DB
+
+    assert DEFAULT_DB.name == "factcheck.sqlite"
+
+
+@pytest.mark.integration
+def test_w1_full_docs_table_has_48_rows(tmp_path):
+    db = tmp_path / "factcheck.sqlite"
+    build_index(load_corpus(COMMITTED), db)
+    assert len(doc_rows(db)) == 48
+
+
+def test_w1_rebuild_keeps_other_tables(tmp_path):
+    corpus = load_corpus(Path(__file__).resolve().parents[1] / "data" / "corpus.json")
+    db = tmp_path / "factcheck.sqlite"
+    build_index(corpus, db)
+    con = sqlite3.connect(db)
+    con.execute("CREATE TABLE runs (id TEXT PRIMARY KEY)")
+    con.execute("INSERT INTO runs VALUES ('r1')")
+    con.commit()
+    con.close()
+    stats = build_index(corpus, db)
+    con = sqlite3.connect(db)
+    try:
+        assert con.execute("SELECT id FROM runs").fetchall() == [("r1",)]
+        assert con.execute("SELECT count(*) FROM docs").fetchone()[0] == stats.docs
+        assert con.execute("SELECT count(*) FROM passages").fetchone()[0] == stats.passages
+    finally:
+        con.close()
+
+
+def test_w1_failed_rebuild_keeps_the_previous_abstracts(tmp_path):
+    corpus = load_corpus(Path(__file__).resolve().parents[1] / "data" / "corpus.json")
+    db = tmp_path / "factcheck.sqlite"
+    stats = build_index(corpus, db)
+    broken = corpus.model_copy(update={"docs": [corpus.docs[0], corpus.docs[0]]})
+    with pytest.raises(sqlite3.IntegrityError):
+        build_index(broken, db)
+    con = sqlite3.connect(db)
+    try:
+        assert con.execute("SELECT count(*) FROM docs").fetchone()[0] == stats.docs
+        assert con.execute("SELECT count(*) FROM passages").fetchone()[0] == stats.passages
+    finally:
+        con.close()

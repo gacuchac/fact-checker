@@ -41,7 +41,7 @@ Requires Python 3.12. The models only run inside a Claude Code session (see belo
 ```bash
 python3.12 -m venv .venv
 .venv/bin/pip install -r requirements-dev.txt   # installs the fc package in editable mode, plus pytest
-.venv/bin/fc index                              # builds data/index.sqlite from the committed data/corpus.json
+.venv/bin/fc db build                            # builds data/factcheck.sqlite from the committed data/corpus.json
 .venv/bin/python -m pytest -q                   # 247 tests, no network needed
 ```
 
@@ -62,7 +62,7 @@ The reviewer step needs the [Codex CLI](https://github.com/openai/codex), signed
 
 | Command | What it does |
 | --- | --- |
-| `fc fetch` / `fc index` | fetch the corpus from arXiv / build the search index |
+| `fc fetch` / `fc db build` | fetch the corpus from arXiv / build the abstracts database and search index (`fc index` is an alias) |
 | `fc retrieve "<query>" --k 5 --json [--run <run>]` | search; with `--run`, the returned papers are logged to the run |
 | `fc validate <run> confirmed` | check `confirmed.json` against its contract |
 | `fc finalize <run>` | check the quotes, apply the rules, write `final.json` |
