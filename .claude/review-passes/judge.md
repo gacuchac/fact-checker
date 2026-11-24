@@ -17,7 +17,10 @@ Score each dimension from 1 to 5, separately:
    5 correct, or none present and none invented; 3 flagged but poorly explained; 1 missed or invented.
 5. aggregation: does the overall verdict follow the stated rule from the statement verdicts?
    5 exactly; 3 follows but the rule shown is wrong or missing; 1 violates it.
-6. unknown_calibration: is `unknown` avoided where the quotes are decisive?
+6. unknown_calibration: is `unknown` avoided where the quotes are decisive? Read each statement's quotes, and
+   its passages in the transcript, together: quotes that each cover part of a statement can settle it jointly.
+   An `unknown` whose kept quotes all take one stance needs a part of the statement that none of them covers;
+   if you cannot name that part, the `unknown` is miscalibrated.
    5 only where evidence is missing or conflicting; 3 once where it looks decisive; 1 used by default.
 
 For each dimension give the score and the evidence (quote the transcript or name the trace field).

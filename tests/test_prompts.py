@@ -4,6 +4,7 @@ from pathlib import Path
 import pytest
 
 from fact_checker.cli import main
+from fact_checker.services.loader import load_prompt
 
 ROOT = Path(__file__).resolve().parents[1]
 VERIFIER = ROOT / "agents" / "claim-verifier.md"
@@ -51,3 +52,30 @@ def test_us13_verifier_prompt_has_no_machine_specific_path():
     prompt = (Path(__file__).resolve().parents[1] / "agents" / "claim-verifier.md").read_text()
     assert "/Users/" not in prompt
     assert "<root>" in prompt
+
+
+def _rules(name: str) -> str:
+    text = load_prompt(name)
+    return text[text.index("For each statement") : text.index("3. reason")]
+
+
+def test_verify_and_revise_share_the_evidence_and_verdict_rules():
+    assert _rules("verify") == _rules("revise")
+
+
+def test_verdict_rules_let_quotes_settle_a_statement_together():
+    text = _rules("verify")
+    assert "read together, establish every part of the statement" in text
+    assert "all or part of what the statement says" in text
+    assert "must name the part of the statement that no quote covers" in text
+    assert "Quote whole sentences" in text
+
+
+def test_review_rubric_judges_one_sided_unknowns_as_miscalibrated():
+    text = load_prompt("review")
+    assert "together: quotes that each cover part of a statement can settle it jointly" in text
+    assert "the `unknown` is miscalibrated" in text
+
+
+def test_decompose_never_restates_statement_0():
+    assert "Never restate statement 0 in other words" in load_prompt("decompose")
