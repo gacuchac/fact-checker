@@ -218,7 +218,7 @@ Write `runs/<YYYYMMDD-HHMMSS>-<slug>/confirmed.json` (`source: "chat"`) matching
 <!-- schema:confirmed:end -->
 
 ## 5. Verify
-Launch a general-purpose subagent with model `sonnet` and effort `high`. Its prompt is the content of `agents/claim-verifier.md` followed by the absolute path of the run folder. Wait for it to finish.
+Launch a general-purpose subagent with model `sonnet` and effort `high`. Its prompt is the content of `agents/claim-verifier.md` followed by two lines: the absolute path of the project root, then the absolute path of the run folder. Wait for it to finish.
 
 ## 6. Show the answer
 Run `.venv/bin/fc show <run>` and paste its output verbatim.
