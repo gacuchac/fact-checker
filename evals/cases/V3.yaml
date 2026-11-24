@@ -1,0 +1,15 @@
+id: V3
+mode: statements
+factcheck:
+  claim: The lost-in-the-middle effect was measured on models with context windows above 100K tokens. Found-in-the-middle calibration requires fine-tuning the model weights.
+  label: unknown
+  statements:
+  - text: The lost-in-the-middle effect was measured on models with context windows above 100K tokens.
+    load_bearing: true
+    query: The lost-in-the-middle effect was measured on models with context windows above 100K tokens.
+    gold_verdict: unknown
+  - text: Found-in-the-middle calibration requires fine-tuning the model weights.
+    load_bearing: false
+    query: Found-in-the-middle calibration requires fine-tuning the model weights.
+    gold_verdict: unknown
+  gold_doc_ids: []

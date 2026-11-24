@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "claim": "RAG over MedMCQA explanations produces a statistically significant accuracy gain on MedQA.",
+  "statements": [
+    {
+      "id": 0,
+      "text": "RAG over MedMCQA explanations produces a statistically significant accuracy gain on MedQA.",
+      "load_bearing": true,
+      "implied_by": "RAG over MedMCQA explanations produces a statistically significant accuracy gain on MedQA.",
+      "query": "RAG over MedMCQA explanations produces a statistically significant accuracy gain on MedQA.",
+      "kind": "explicit",
+      "mark": "confirmed"
+    }
+  ],
+  "proposed": [
+    {
+      "id": 0,
+      "text": "RAG over MedMCQA explanations produces a statistically significant accuracy gain on MedQA.",
+      "load_bearing": true,
+      "implied_by": "RAG over MedMCQA explanations produces a statistically significant accuracy gain on MedQA.",
+      "query": "RAG over MedMCQA explanations produces a statistically significant accuracy gain on MedQA.",
+      "kind": "explicit",
+      "mark": "confirmed"
+    }
+  ],
+  "edits": [],
+  "rounds": 1,
+  "source": "case"
+}

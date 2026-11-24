@@ -1,0 +1,12 @@
+id: V2
+mode: statements
+factcheck:
+  claim: RAG over MedMCQA explanations produces a statistically significant accuracy gain on MedQA.
+  label: contradicted
+  statements:
+  - text: RAG over MedMCQA explanations produces a statistically significant accuracy gain on MedQA.
+    load_bearing: true
+    query: RAG over MedMCQA explanations produces a statistically significant accuracy gain on MedQA.
+    gold_verdict: contradicted
+  gold_doc_ids:
+  - 2604.23801v1

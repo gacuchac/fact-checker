@@ -1,0 +1,12 @@
+id: V1
+mode: statements
+factcheck:
+  claim: Language models perform best when relevant information is at the beginning or end of the input context.
+  label: supported
+  statements:
+  - text: Language models perform best when relevant information is at the beginning or end of the input context.
+    load_bearing: true
+    query: Language models perform best when relevant information is at the beginning or end of the input context.
+    gold_verdict: supported
+  gold_doc_ids:
+  - 2307.03172v3

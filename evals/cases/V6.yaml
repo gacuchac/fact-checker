@@ -1,0 +1,16 @@
+id: V6
+mode: statements
+factcheck:
+  claim: LongAlign improves performance on long context tasks by up to 30%. LongAlign degrades performance on short, generic tasks.
+  label: contradicted
+  statements:
+  - text: LongAlign improves performance on long context tasks by up to 30%.
+    load_bearing: true
+    query: LongAlign improves performance on long context tasks by up to 30%.
+    gold_verdict: supported
+  - text: LongAlign degrades performance on short, generic tasks.
+    load_bearing: true
+    query: LongAlign degrades performance on short, generic tasks.
+    gold_verdict: contradicted
+  gold_doc_ids:
+  - 2401.18058v1

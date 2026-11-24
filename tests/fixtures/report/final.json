@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "claim": "RAG beats fine-tuning, and LongAlign improves long tasks but hurts short ones.",
+  "overall": {
+    "verdict": "unknown",
+    "rule": 1
+  },
+  "statements": [
+    {
+      "id": 0,
+      "text": "RAG outperforms domain fine-tuning at injecting domain knowledge into language models.",
+      "load_bearing": true,
+      "mark": "confirmed",
+      "model_verdict": "unknown",
+      "verdict": "unknown",
+      "downgrade_reason": "conflict",
+      "evidence": [
+        {
+          "doc_id": "2312.05934v3",
+          "title": "Fine-Tuning or Retrieval? Comparing Knowledge Injection in LLMs",
+          "authors": [
+            "Ann One",
+            "Bo Two"
+          ],
+          "published": "2024-01-02",
+          "quote": "RAG consistently outperforms it, both for existing knowledge encountered during training and entirely new knowledge",
+          "stance": "supports"
+        },
+        {
+          "doc_id": "2604.23801v1",
+          "title": "Domain Fine-Tuning vs. Retrieval-Augmented Generation for Medical Multiple-Choice Question Answering",
+          "authors": [
+            "Ann One",
+            "Bo Two"
+          ],
+          "published": "2024-01-02",
+          "quote": "domain knowledge encoded in weights dominates domain knowledge supplied in context",
+          "stance": "contradicts"
+        }
+      ],
+      "dropped_quotes": []
+    },
+    {
+      "id": 1,
+      "text": "LongAlign improves performance on long context tasks by up to 30%.",
+      "load_bearing": true,
+      "mark": "user_edited",
+      "model_verdict": "supported",
+      "verdict": "supported",
+      "downgrade_reason": null,
+      "evidence": [
+        {
+          "doc_id": "2401.18058v1",
+          "title": "LongAlign: A Recipe for Long Context Alignment of Large Language Models",
+          "authors": [
+            "Ann One",
+            "Bo Two"
+          ],
+          "published": "2024-01-02",
+          "quote": "LongAlign outperforms existing recipes for LLMs in long context tasks by up to 30\\%",
+          "stance": "supports"
+        }
+      ],
+      "dropped_quotes": []
+    },
+    {
+      "id": 2,
+      "text": "LongAlign degrades performance on short, generic tasks.",
+      "load_bearing": false,
+      "mark": "user_added",
+      "model_verdict": "contradicted",
+      "verdict": "unknown",
+      "downgrade_reason": "quote_failed",
+      "evidence": [],
+      "dropped_quotes": [
+        {
+          "passage_id": "2401.18058v1#7",
+          "quote": "LongAlign clearly harms proficiency in short generic tasks",
+          "stance": "contradicts"
+        }
+      ]
+    }
+  ],
+  "counts": {
+    "confirmed": 1,
+    "user_edited": 1,
+    "user_added": 1,
+    "dropped": 0
+  }
+}

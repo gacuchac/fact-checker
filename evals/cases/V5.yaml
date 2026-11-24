@@ -1,0 +1,11 @@
+id: V5
+mode: statements
+factcheck:
+  claim: Mixture-of-experts language models route each token to a small subset of expert networks.
+  label: unknown
+  statements:
+  - text: Mixture-of-experts language models route each token to a small subset of expert networks.
+    load_bearing: true
+    query: Mixture-of-experts language models route each token to a small subset of expert networks.
+    gold_verdict: unknown
+  gold_doc_ids: []

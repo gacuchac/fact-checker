@@ -1,0 +1,122 @@
+[
+  {
+    "expect": true,
+    "label": "exact",
+    "doc_id": "2307.03172v3",
+    "quote": "performance is often highest when relevant information occurs at the beginning or end of the input context"
+  },
+  {
+    "expect": true,
+    "label": "exact w/ number",
+    "doc_id": "2411.03538v1",
+    "quote": "only a handful of the most recent state of the art LLMs can maintain consistent accuracy at long context above 64k tokens"
+  },
+  {
+    "expect": true,
+    "label": "case+trailing period",
+    "doc_id": "2312.05934v3",
+    "quote": "RAG consistently outperforms it, both for existing knowledge encountered during training and entirely new knowledge."
+  },
+  {
+    "expect": true,
+    "label": "line-wrapped whitespace",
+    "doc_id": "2403.01432v5",
+    "quote": "RAG surpasses FT by a large\n  margin particularly for least popular factual knowledge"
+  },
+  {
+    "expect": true,
+    "label": "curly quotes",
+    "doc_id": "2601.22548v3",
+    "quote": "the entropy of “easy” versus “hard” evaluation votes from LLM judges"
+  },
+  {
+    "expect": true,
+    "label": "latex stripped %",
+    "doc_id": "2508.15253v2",
+    "quote": "average performance gain of 5.0% on QA and fact-checking benchmarks"
+  },
+  {
+    "expect": true,
+    "label": "latex stripped textbf",
+    "doc_id": "2601.06112v1",
+    "quote": "We introduce ReliabilityBench, a benchmark for"
+  },
+  {
+    "expect": true,
+    "label": "latex math stripped",
+    "doc_id": "2601.06112v1",
+    "quote": "reduce success from 96.9% at ε=0 to 88.1% at ε=0.2"
+  },
+  {
+    "expect": true,
+    "label": "en dash for hyphen",
+    "doc_id": "2402.11035v3",
+    "quote": "DPR fine–tunes pre–trained networks to enhance the alignment"
+  },
+  {
+    "expect": true,
+    "label": "hyphenation 'short- and'",
+    "doc_id": "2401.15884v3",
+    "quote": "covering short and long-form generation tasks"
+  },
+  {
+    "expect": true,
+    "label": "url kept text",
+    "doc_id": "2403.01432v5",
+    "quote": "The code is available at https://github.com/informagi/RAGvsFT"
+  },
+  {
+    "expect": false,
+    "label": "number changed",
+    "doc_id": "2411.03538v1",
+    "quote": "maintain consistent accuracy at long context above 32k tokens"
+  },
+  {
+    "expect": false,
+    "label": "sign flipped (-1.9 -> 1.9)",
+    "doc_id": "2604.23801v1",
+    "quote": "in the domain-tuned model the point estimate is slightly negative (1.9 pp, p = 0.16)"
+  },
+  {
+    "expect": false,
+    "label": "negation inserted",
+    "doc_id": "2312.05934v3",
+    "quote": "RAG does not consistently outperform it"
+  },
+  {
+    "expect": false,
+    "label": "entity swapped",
+    "doc_id": "2404.13076v1",
+    "quote": "LLMs such as GPT-4 and Llama 3 have non-trivial accuracy"
+  },
+  {
+    "expect": false,
+    "label": "stitched with ellipsis",
+    "doc_id": "2604.23801v1",
+    "quote": "RAG over MedMCQA explanations ... produce a statistically significant gain"
+  },
+  {
+    "expect": false,
+    "label": "stitched across sentences",
+    "doc_id": "2307.03172v3",
+    "quote": "language models do not robustly make use of information in long input contexts, even for explicitly long-context models"
+  },
+  {
+    "expect": false,
+    "label": "paraphrase",
+    "doc_id": "2307.03172v3",
+    "quote": "models do best when the relevant info is at the start or the end of the context"
+  },
+  {
+    "expect": false,
+    "label": "too short (true but trivial)",
+    "doc_id": "2604.23801v1",
+    "quote": "does not produce"
+  },
+  {
+    "expect": false,
+    "label": "v1-only wording (LLMs vs LMs)",
+    "doc_id": "2403.01432v5",
+    "quote": "Large Language Models (LLMs) memorize a vast amount of factual knowledge"
+  }
+]

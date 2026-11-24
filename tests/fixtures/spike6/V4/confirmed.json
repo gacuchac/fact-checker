@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "claim": "RAG outperforms domain fine-tuning at injecting domain knowledge into language models.",
+  "statements": [
+    {
+      "id": 0,
+      "text": "RAG outperforms domain fine-tuning at injecting domain knowledge into language models.",
+      "load_bearing": true,
+      "implied_by": "RAG outperforms domain fine-tuning at injecting domain knowledge into language models.",
+      "query": "RAG outperforms domain fine-tuning at injecting domain knowledge into language models.",
+      "kind": "explicit",
+      "mark": "confirmed"
+    }
+  ],
+  "proposed": [
+    {
+      "id": 0,
+      "text": "RAG outperforms domain fine-tuning at injecting domain knowledge into language models.",
+      "load_bearing": true,
+      "implied_by": "RAG outperforms domain fine-tuning at injecting domain knowledge into language models.",
+      "query": "RAG outperforms domain fine-tuning at injecting domain knowledge into language models.",
+      "kind": "explicit",
+      "mark": "confirmed"
+    }
+  ],
+  "edits": [],
+  "rounds": 1,
+  "source": "case"
+}

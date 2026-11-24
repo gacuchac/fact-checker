@@ -1,0 +1,12 @@
+{
+  "overall": {
+    "verdict": "supported",
+    "rule": 4
+  },
+  "statements": {
+    "0": {
+      "verdict": "supported",
+      "downgrade_reason": null
+    }
+  }
+}

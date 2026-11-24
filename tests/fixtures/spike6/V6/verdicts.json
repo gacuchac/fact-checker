@@ -1,0 +1,35 @@
+{
+  "statements": [
+    {
+      "id": 0,
+      "evidence": [
+        {
+          "passage_id": "2401.18058v1#7",
+          "quote": "LongAlign outperforms existing recipes for LLMs in long context tasks by up to 30\\%",
+          "stance": "supports"
+        }
+      ],
+      "verdict": "supported",
+      "reason": "The LongAlign abstract states it outperforms existing recipes in long context tasks by up to 30\\%, matching the statement.",
+      "queries": [
+        "LongAlign improves performance on long context tasks by up to 30%."
+      ]
+    },
+    {
+      "id": 1,
+      "evidence": [
+        {
+          "passage_id": "2401.18058v1#7",
+          "quote": "while also maintaining their proficiency in handling short, generic tasks",
+          "stance": "contradicts"
+        }
+      ],
+      "verdict": "contradicted",
+      "reason": "The abstract says LongAlign maintains proficiency on short, generic tasks, which is incompatible with the claim that it degrades performance on them.",
+      "queries": [
+        "LongAlign degrades performance on short, generic tasks."
+      ]
+    }
+  ],
+  "schema_version": 1
+}
