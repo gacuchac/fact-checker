@@ -1,0 +1,23 @@
+{
+  "statements": [
+    {
+      "id": 0,
+      "evidence": [],
+      "verdict": "unknown",
+      "reason": "None of the passages report which models or context window sizes the lost-in-the-middle effect was measured on, so the statement cannot be settled.",
+      "queries": [
+        "The lost-in-the-middle effect was measured on models with context windows above 100K tokens."
+      ]
+    },
+    {
+      "id": 1,
+      "evidence": [],
+      "verdict": "unknown",
+      "reason": "The passages describe found-in-the-middle as a calibration mechanism but never say whether it needs fine-tuning of model weights.",
+      "queries": [
+        "Found-in-the-middle calibration requires fine-tuning the model weights."
+      ]
+    }
+  ],
+  "schema_version": 1
+}

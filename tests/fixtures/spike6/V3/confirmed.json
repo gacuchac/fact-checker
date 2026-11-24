@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "claim": "The lost-in-the-middle effect was measured on models with context windows above 100K tokens. Found-in-the-middle calibration requires fine-tuning the model weights.",
+  "statements": [
+    {
+      "id": 0,
+      "text": "The lost-in-the-middle effect was measured on models with context windows above 100K tokens.",
+      "load_bearing": true,
+      "implied_by": "The lost-in-the-middle effect was measured on models with context windows above 100K tokens.",
+      "query": "The lost-in-the-middle effect was measured on models with context windows above 100K tokens.",
+      "kind": "explicit",
+      "mark": "confirmed"
+    },
+    {
+      "id": 1,
+      "text": "Found-in-the-middle calibration requires fine-tuning the model weights.",
+      "load_bearing": false,
+      "implied_by": "Found-in-the-middle calibration requires fine-tuning the model weights.",
+      "query": "Found-in-the-middle calibration requires fine-tuning the model weights.",
+      "kind": "explicit",
+      "mark": "confirmed"
+    }
+  ],
+  "proposed": [
+    {
+      "id": 0,
+      "text": "The lost-in-the-middle effect was measured on models with context windows above 100K tokens.",
+      "load_bearing": true,
+      "implied_by": "The lost-in-the-middle effect was measured on models with context windows above 100K tokens.",
+      "query": "The lost-in-the-middle effect was measured on models with context windows above 100K tokens.",
+      "kind": "explicit",
+      "mark": "confirmed"
+    },
+    {
+      "id": 1,
+      "text": "Found-in-the-middle calibration requires fine-tuning the model weights.",
+      "load_bearing": false,
+      "implied_by": "Found-in-the-middle calibration requires fine-tuning the model weights.",
+      "query": "Found-in-the-middle calibration requires fine-tuning the model weights.",
+      "kind": "explicit",
+      "mark": "confirmed"
+    }
+  ],
+  "edits": [],
+  "rounds": 1,
+  "source": "case"
+}

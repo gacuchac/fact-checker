@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "claim": "LongAlign improves performance on long context tasks by up to 30%. LongAlign degrades performance on short, generic tasks.",
+  "statements": [
+    {
+      "id": 0,
+      "text": "LongAlign improves performance on long context tasks by up to 30%.",
+      "load_bearing": true,
+      "implied_by": "LongAlign improves performance on long context tasks by up to 30%.",
+      "query": "LongAlign improves performance on long context tasks by up to 30%.",
+      "kind": "explicit",
+      "mark": "confirmed"
+    },
+    {
+      "id": 1,
+      "text": "LongAlign degrades performance on short, generic tasks.",
+      "load_bearing": true,
+      "implied_by": "LongAlign degrades performance on short, generic tasks.",
+      "query": "LongAlign degrades performance on short, generic tasks.",
+      "kind": "explicit",
+      "mark": "confirmed"
+    }
+  ],
+  "proposed": [
+    {
+      "id": 0,
+      "text": "LongAlign improves performance on long context tasks by up to 30%.",
+      "load_bearing": true,
+      "implied_by": "LongAlign improves performance on long context tasks by up to 30%.",
+      "query": "LongAlign improves performance on long context tasks by up to 30%.",
+      "kind": "explicit",
+      "mark": "confirmed"
+    },
+    {
+      "id": 1,
+      "text": "LongAlign degrades performance on short, generic tasks.",
+      "load_bearing": true,
+      "implied_by": "LongAlign degrades performance on short, generic tasks.",
+      "query": "LongAlign degrades performance on short, generic tasks.",
+      "kind": "explicit",
+      "mark": "confirmed"
+    }
+  ],
+  "edits": [],
+  "rounds": 1,
+  "source": "case"
+}

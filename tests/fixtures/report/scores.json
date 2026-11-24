@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "model": "judge-model",
+  "seconds": 12.4,
+  "dimensions": {
+    "evidence_relevance": {
+      "score": 5,
+      "evidence": "evidence_relevance looks fine here"
+    },
+    "statement_verdicts": {
+      "score": 4,
+      "evidence": "statement_verdicts looks fine here"
+    },
+    "overreach": {
+      "score": 3,
+      "evidence": "overreach looks fine here"
+    },
+    "conflict_handling": {
+      "score": 5,
+      "evidence": "conflict_handling looks fine here"
+    },
+    "aggregation": {
+      "score": 4,
+      "evidence": "aggregation looks fine here"
+    },
+    "unknown_calibration": {
+      "score": 2,
+      "evidence": "unknown_calibration looks fine here"
+    }
+  },
+  "flagged": [
+    {
+      "statement_id": 2,
+      "dimension": "unknown_calibration",
+      "reason": "Dropped quote left the statement unknown without a reason shown."
+    }
+  ],
+  "needs_attention": true
+}

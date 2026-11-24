@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "claim": "Language models perform best when relevant information is at the beginning or end of the input context.",
+  "statements": [
+    {
+      "id": 0,
+      "text": "Language models perform best when relevant information is at the beginning or end of the input context.",
+      "load_bearing": true,
+      "implied_by": "Language models perform best when relevant information is at the beginning or end of the input context.",
+      "query": "Language models perform best when relevant information is at the beginning or end of the input context.",
+      "kind": "explicit",
+      "mark": "confirmed"
+    }
+  ],
+  "proposed": [
+    {
+      "id": 0,
+      "text": "Language models perform best when relevant information is at the beginning or end of the input context.",
+      "load_bearing": true,
+      "implied_by": "Language models perform best when relevant information is at the beginning or end of the input context.",
+      "query": "Language models perform best when relevant information is at the beginning or end of the input context.",
+      "kind": "explicit",
+      "mark": "confirmed"
+    }
+  ],
+  "edits": [],
+  "rounds": 1,
+  "source": "case"
+}
