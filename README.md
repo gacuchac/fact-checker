@@ -88,6 +88,56 @@ Overall: contradicted (rule 2)
   contradicts: "while also maintaining their proficiency in handling short, generic tasks" - LongAlign: ... (2401.18058v1)
 ```
 
+## Web app
+
+There is a web version that calls the models directly. You approve the statements in the browser, and every step of a run is recorded so you can inspect it.
+
+| Step | Who does it |
+| --- | --- |
+| Break the claim into falsifiable statements | Claude Opus 5.5 (Anthropic API) |
+| Review, edit and approve the statements | you, in the browser (statements you edit or add get a falsifiability check from Opus) |
+| Search each statement, then give verdicts with exact quotes | code (BM25 over SQLite FTS5), then Claude Sonnet 5.5 at high effort |
+| Check every quote and combine the verdicts | code (`finalize`): only exact quotes from that statement's own passages survive |
+| Review the answer against the rubric | GPT-6 Sol (OpenAI API) |
+| If the reviewer flags problems, revise once | Sonnet revises using the reviewer's reasoning, code re-checks it, and Sol reviews again |
+| The final message | rendered by code from the checked answer |
+
+**Traces.** Every run is a trace in the `spans` table of `data/factcheck.sqlite`:
+- your claim, edits and approval;
+- every model call, with the full system prompt, the user message, the raw output, model, tokens and latency, including Sol's review and Claude's revision;
+- every search, with its passages;
+- `finalize`, with its quote checks;
+- the final message.
+
+The **Traces** page shows each run as a timeline you can expand. The **Abstracts** page lets you browse and search the 48 papers.
+
+### Run it locally
+```bash
+cp .env.example .env            # add ANTHROPIC_API_KEY and OPENAI_API_KEY
+.venv/bin/pip install -r requirements-dev.txt
+(cd web && npm ci && npm run build)
+.venv/bin/fc serve --port 8000  # serves the API and the built app at http://127.0.0.1:8000
+```
+For frontend development, run `npm run dev` in `web/` (on port 5173, with `/api` proxied to port 8000).
+
+Settings are environment variables (see `.env.example`):
+- the models and effort levels;
+- `FC_ACCESS_CODE`: when set, the app asks for it;
+- `FC_DAILY_RUN_CAP`: how many claims can be verified per day;
+- `FC_DB`, `FC_WEB_DIST` and `FC_CORPUS`: file paths.
+
+### Deployment
+One Railway service runs `uvicorn` with `fact_checker.api.app:create_app_from_env`. It serves both the API and the built React app.
+- **Database:** on a Railway volume at `/data`, so runs and traces survive redeploys.
+- **Secrets:** the API keys and the access code are Railway variables; nothing secret is in the repo.
+
+### Browser test
+`e2e/flow.mjs` drives the deployed (or local) app in headless Chrome with Playwright. It takes a screenshot at every step: claim, access code, statements, verifying, result, review, trace timeline, each span type, traces list and abstracts.
+```bash
+cd e2e && npm install
+BASE_URL=https://<app> ACCESS_CODE=<code> OUT_DIR=shots node flow.mjs
+```
+
 ## Results so far
 
 From [docs/planning/fact-check-v1/smoke-run-fc-04.md](docs/planning/fact-check-v1/smoke-run-fc-04.md):
