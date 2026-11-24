@@ -8,3 +8,5 @@ docs/planning/*/spikes/
 runs/
 data/factcheck.sqlite
 *.egg-info/
+web/node_modules/
+web/dist/
