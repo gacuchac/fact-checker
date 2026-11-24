@@ -1,0 +1,14 @@
+pyproject.toml
+src/fact_checker/__init__.py
+src/fact_checker.egg-info/PKG-INFO
+src/fact_checker.egg-info/SOURCES.txt
+src/fact_checker.egg-info/dependency_links.txt
+src/fact_checker.egg-info/entry_points.txt
+src/fact_checker.egg-info/requires.txt
+src/fact_checker.egg-info/top_level.txt
+tests/test_check_branch_order.py
+tests/test_cli_schema.py
+tests/test_contracts.py
+tests/test_corpus.py
+tests/test_index.py
+tests/test_retrieve.py

@@ -5,3 +5,5 @@ __pycache__/
 .env
 .humanlayer/
 docs/planning/*/spikes/
+runs/
+data/index.sqlite
