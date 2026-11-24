@@ -99,7 +99,7 @@ From [docs/planning/fact-check-v1/smoke-run-fc-04.md](docs/planning/fact-check-v
 
 - **Small eval.** It has 6 cases. The plan is 24–30, scored on 8 dimensions with a simulated user.
 - **No standalone API path yet.** The models run inside a Claude Code session. A web app calling the Claude and OpenAI APIs directly is the next step; the contracts and `fc` stay as they are.
-- **Tied to the author's machine.** The verifier prompt names an absolute project path, and the reviewer calls a script from the author's agentic workspace. Running the full flow elsewhere means editing those two paths. Search, finalize, eval scoring and the tests are portable.
+- **The reviewer depends on the author's workspace.** `fc judge` calls `codex_review.py` from the author's agentic workspace (default `~/Developing/scripts/codex_review.py`; override with `FC_CODEX_REVIEW`). Search, finalize, eval scoring and the tests run anywhere.
 - **Keyword search only.** Paraphrased claims depend on the verifier's reworded searches.
 - **Review follow-ups.** Open items from code review are listed in the planning notes.
 

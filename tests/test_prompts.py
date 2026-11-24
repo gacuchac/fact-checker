@@ -45,3 +45,9 @@ def test_us13_runbook_allows_statement_zero_to_entail_its_parts_and_preflights_t
     runbook = (Path(__file__).resolve().parents[1] / "docs" / "RUNBOOK.md").read_text()
     assert "except that statement 0" in runbook
     assert "tests/fixtures/spike6/V4" in runbook
+
+
+def test_us13_verifier_prompt_has_no_machine_specific_path():
+    prompt = (Path(__file__).resolve().parents[1] / "agents" / "claim-verifier.md").read_text()
+    assert "/Users/" not in prompt
+    assert "<root>" in prompt
