@@ -101,8 +101,9 @@ def create_app_from_env() -> FastAPI:
     The defaults are data/factcheck.sqlite, web/dist (served only when it exists) and data/corpus.json in the
     source checkout; a deployment sets the variables when the package is installed elsewhere.
     """
+    settings = settings_from_environment()
     db = Path(os.environ.get("FC_DB", DEFAULT_DB))
     web_dist = Path(os.environ.get("FC_WEB_DIST", WEB_DIST))
     corpus = Path(os.environ.get("FC_CORPUS", CORPUS))
     static_dir = web_dist if web_dist.is_dir() else None
-    return create_app(settings_from_environment(), db, static_dir=static_dir, corpus=corpus)
+    return create_app(settings, db, static_dir=static_dir, corpus=corpus)

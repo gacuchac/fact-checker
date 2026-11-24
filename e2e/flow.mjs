@@ -41,7 +41,9 @@ try {
   await shot("verifying");
   await page.getByTestId("result-overall").waitFor({ timeout: 240000 });
   log("overall", (await page.getByTestId("result-overall").innerText()).replace(/\s+/g, " "));
-  log("quotes", await page.getByTestId("evidence-quote").count());
+  const quotes = await page.getByTestId("evidence-quote").count();
+  log("quotes", quotes);
+  if (quotes === 0) throw new Error("the result shows no evidence quotes");
   log("revised", await page.getByTestId("revised-banner").count(), "needs-attention", await page.getByTestId("needs-attention").count());
   await shot("result");
   await page.getByTestId("review-panel").scrollIntoViewIfNeeded();
@@ -54,6 +56,9 @@ try {
   const rows = page.getByTestId("span-row");
   const texts = await rows.allInnerTexts();
   const pick = (re) => texts.findIndex((t) => re.test(t));
+  for (const required of [/claim/, /decompose/, /approval/, /retrieve/, /verify/, /finalize/, /review/, /final_message/]) {
+    if (pick(required) < 0) throw new Error(`the trace has no ${required} span`);
+  }
   for (const [label, re] of [["decompose", /decompose/i], ["retrieve", /retrieve/i], ["verify", /verify/i], ["review-gpt", /review/i], ["final-message", /final_message/i]]) {
     const i = pick(re);
     if (i >= 0) {
