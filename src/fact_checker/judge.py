@@ -36,9 +36,6 @@ def _as_scores_data(text: str) -> dict[str, object]:
     data = json.loads(_strip(text))
     if not isinstance(data, dict):
         raise TypeError("judge output is not a JSON object")
-    if "dimensions" not in data:
-        flagged = data.pop("flagged", [])
-        data = {"dimensions": data, "flagged": flagged}
     return data
 
 

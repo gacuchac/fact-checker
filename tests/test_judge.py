@@ -221,3 +221,9 @@ def test_us12_rubric_points_sol_to_the_transcript_for_passage_text():
     rubric = (Path(__file__).resolve().parents[1] / ".claude" / "review-passes" / "judge.md").read_text()
     assert "passage text is in the transcript" in rubric
     assert '"dimensions"' in rubric
+
+
+def test_us12_flat_output_without_dimensions_is_rejected(run, codex):
+    codex["stdout"] = json.dumps({**{name: {"score": 4, "evidence": "q"} for name in DIMENSIONS}, "flagged": []})
+    assert main(["judge", str(run)]) == 1
+    assert not (run / "scores.json").exists()
