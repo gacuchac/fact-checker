@@ -28,14 +28,17 @@ class EvalReport:
 
 
 def case_to_confirmed(case: dict) -> ConfirmedStatements:
-    """Build the confirmed statements (source "case", all marked confirmed) of a statements-mode case."""
+    """Build the confirmed statements (source "case", all marked confirmed) of a statements-mode case.
+
+    A statement's implied_by is its own implied_by span of the claim when the case gives one, else its text.
+    """
     block = case["factcheck"]
     statements = [
         Statement(
             id=i,
             text=s["text"],
             load_bearing=s["load_bearing"],
-            implied_by=s["text"],
+            implied_by=s.get("implied_by", s["text"]),
             query=s["query"],
             kind="explicit",
             mark="confirmed",

@@ -162,7 +162,7 @@ def test_us14_eval_score_prints_report_and_exits_0_with_a_missing_run(tmp_path, 
 
 def test_us14_committed_seed_cases_load_and_convert():
     files = sorted(CASES_DIR.glob("V*.yaml"))
-    assert [f.stem for f in files] == ["V1", "V2", "V3", "V4", "V5", "V6"]
+    assert [f.stem for f in files] == ["V1", "V2", "V3", "V4", "V5", "V6", "V7"]
     for f in files:
         case = yaml.safe_load(f.read_text())
         assert case["id"] == f.stem
@@ -170,6 +170,16 @@ def test_us14_committed_seed_cases_load_and_convert():
         confirmed = case_to_confirmed(case)
         assert confirmed.source == "case"
         assert len(confirmed.statements) == len(case["factcheck"]["statements"])
+
+
+def test_case_statement_may_give_its_implied_by_span():
+    case = yaml.safe_load((CASES_DIR / "V7.yaml").read_text())
+    confirmed = case_to_confirmed(case)
+    assert confirmed.claim == "on long context, details get lost in the middle"
+    assert [s.implied_by for s in confirmed.statements] == [
+        "on long context, details get lost in the middle",
+        "details get lost in the middle",
+    ]
 
 
 def test_us14_duplicate_statement_ids_do_not_cover_a_missing_gold_statement():

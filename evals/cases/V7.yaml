@@ -1,0 +1,19 @@
+id: V7
+mode: statements
+factcheck:
+  claim: on long context, details get lost in the middle
+  label: supported
+  statements:
+  - text: When language models process long contexts, information located in the middle of the context is used less accurately than information located at the beginning or end.
+    implied_by: on long context, details get lost in the middle
+    load_bearing: true
+    query: lost in the middle long context language models position of relevant information retrieval accuracy
+    gold_verdict: supported
+  - text: Language model performance on tasks requiring use of a specific detail from a long input degrades when that detail is placed in the middle of the input rather than at its start or end.
+    implied_by: details get lost in the middle
+    load_bearing: true
+    query: U-shaped performance curve primacy recency bias long-context LLM multi-document question answering key-value retrieval
+    gold_verdict: supported
+  gold_doc_ids:
+  - 2307.03172v3
+  - 2406.16008v2
