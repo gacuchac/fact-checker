@@ -1,0 +1,20 @@
+{
+  "statements": [
+    {
+      "id": 0,
+      "evidence": [
+        {
+          "passage_id": "2307.03172v3#2",
+          "quote": "performance is often highest when relevant information occurs at the beginning or end of the input context",
+          "stance": "supports"
+        }
+      ],
+      "verdict": "supported",
+      "reason": "The Lost in the Middle abstract states that performance is often highest when relevant information occurs at the beginning or end of the input context, which is what the statement says.",
+      "queries": [
+        "Language models perform best when relevant information is at the beginning or end of the input context."
+      ]
+    }
+  ],
+  "schema_version": 1
+}

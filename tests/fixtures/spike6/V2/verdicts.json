@@ -1,0 +1,20 @@
+{
+  "statements": [
+    {
+      "id": 0,
+      "evidence": [
+        {
+          "passage_id": "2604.23801v1#3",
+          "quote": "RAG over MedMCQA explanations does not produce a statistically significant gain in either model",
+          "stance": "contradicts"
+        }
+      ],
+      "verdict": "contradicted",
+      "reason": "The passage says RAG over MedMCQA explanations does not produce a statistically significant gain in either model, the opposite of the statement.",
+      "queries": [
+        "RAG over MedMCQA explanations produces a statistically significant accuracy gain on MedQA."
+      ]
+    }
+  ],
+  "schema_version": 1
+}

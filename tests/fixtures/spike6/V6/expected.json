@@ -1,0 +1,16 @@
+{
+  "overall": {
+    "verdict": "contradicted",
+    "rule": 2
+  },
+  "statements": {
+    "0": {
+      "verdict": "supported",
+      "downgrade_reason": null
+    },
+    "1": {
+      "verdict": "contradicted",
+      "downgrade_reason": null
+    }
+  }
+}

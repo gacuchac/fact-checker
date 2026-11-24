@@ -1,0 +1,12 @@
+{
+  "overall": {
+    "verdict": "unknown",
+    "rule": 3
+  },
+  "statements": {
+    "0": {
+      "verdict": "unknown",
+      "downgrade_reason": null
+    }
+  }
+}
