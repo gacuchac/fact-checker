@@ -189,8 +189,25 @@ def next_seq(db: Path, run_id: str) -> int:
     return 0 if top is None else top + 1
 
 
-def count_runs_since(db: Path, iso_ts: str) -> int:
-    """Return how many runs were created at or after iso_ts (an ISO 8601 UTC timestamp)."""
+def count_runs_since(db: Path, iso_ts: str, statuses: tuple[str, ...] | None = None) -> int:
+    """Return how many runs were created at or after iso_ts (an ISO 8601 UTC timestamp).
+
+    With statuses, only runs whose status is one of them are counted.
+    """
+    sql, params = "SELECT COUNT(*) FROM runs WHERE created_at >= ?", [iso_ts]
+    if statuses:
+        sql += f" AND status IN ({', '.join('?' for _ in statuses)})"
+        params.extend(statuses)
     with _connect(db) as con:
-        (count,) = con.execute("SELECT COUNT(*) FROM runs WHERE created_at >= ?", (iso_ts,)).fetchone()
+        (count,) = con.execute(sql, params).fetchone()
     return count
+
+
+def transition_status(db: Path, run_id: str, expected: str, new: str) -> bool:
+    """Atomically move the run from status expected to new; return False if the run was not in expected."""
+    with _connect(db) as con:
+        changed = con.execute(
+            "UPDATE runs SET status = ?, error = NULL, updated_at = ? WHERE id = ? AND status = ?",
+            (new, now_iso(), run_id, expected),
+        ).rowcount
+    return changed == 1

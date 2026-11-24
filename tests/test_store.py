@@ -124,3 +124,24 @@ def test_init_store_does_not_touch_docs_and_passages(tmp_path):
     run_id = create_run(path, "c")
     build_index(load_corpus(COMMITTED), path)
     assert get_run(path, run_id) is not None
+
+
+def test_transition_status_is_atomic(tmp_path):
+    from fact_checker.store import transition_status
+
+    db = tmp_path / "s.sqlite"
+    init_store(db)
+    run_id = create_run(db, "c")
+    update_run(db, run_id, status="confirmed")
+    assert transition_status(db, run_id, "confirmed", "verifying") is True
+    assert transition_status(db, run_id, "confirmed", "verifying") is False
+    assert get_run(db, run_id).status == "verifying"
+
+
+def test_count_runs_since_can_filter_by_status(tmp_path):
+    db = tmp_path / "s.sqlite"
+    init_store(db)
+    a, _ = create_run(db, "a"), create_run(db, "b")
+    update_run(db, a, status="done")
+    assert count_runs_since(db, "2000-01-01T00:00:00+00:00") == 2
+    assert count_runs_since(db, "2000-01-01T00:00:00+00:00", statuses=("verifying", "done", "failed")) == 1
