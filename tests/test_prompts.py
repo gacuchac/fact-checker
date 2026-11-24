@@ -39,3 +39,9 @@ def test_us13_runbook_names_validate_show_and_verifier_path():
     text = RUNBOOK.read_text()
     for needle in ("fc validate", "fc show", "agents/claim-verifier.md"):
         assert needle in text
+
+
+def test_us13_runbook_allows_statement_zero_to_entail_its_parts_and_preflights_the_judge():
+    runbook = (Path(__file__).resolve().parents[1] / "docs" / "RUNBOOK.md").read_text()
+    assert "except that statement 0" in runbook
+    assert "tests/fixtures/spike6/V4" in runbook
