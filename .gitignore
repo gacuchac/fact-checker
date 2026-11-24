@@ -8,5 +8,7 @@ docs/planning/*/spikes/
 runs/
 data/factcheck.sqlite
 *.egg-info/
+e2e/node_modules/
+e2e/shots/
 web/node_modules/
 web/dist/

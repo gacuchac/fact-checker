@@ -326,3 +326,19 @@ def test_spans_are_stored_in_the_db(db):
     with make_client(db, clients=happy_clients()) as client:
         run_id = propose(client)["run_id"]
     assert [s.name for s in list_spans(db, run_id)] == ["claim", "decompose"]
+
+
+def test_create_app_from_env_honours_path_overrides(monkeypatch, tmp_path, corpus_db):
+    from fact_checker.api.app import create_app_from_env
+
+    dist = tmp_path / "dist"
+    dist.mkdir()
+    (dist / "index.html").write_text("<p>spa</p>")
+    db = tmp_path / "env.sqlite"
+    monkeypatch.setenv("FC_DB", str(db))
+    monkeypatch.setenv("FC_WEB_DIST", str(dist))
+    monkeypatch.setenv("FC_CORPUS", str(COMMITTED))
+    monkeypatch.delenv("FC_ACCESS_CODE", raising=False)
+    with TestClient(create_app_from_env()) as client:
+        assert client.get("/api/health").json() == {"ok": True, "docs": 48}
+        assert "spa" in client.get("/somewhere").text

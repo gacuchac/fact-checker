@@ -43,10 +43,10 @@ def real_clients(settings: Settings) -> Clients:
     return Clients(claude, claude, claude, OpenAIClient(settings.openai_api_key))
 
 
-def _prepare_store(db: Path) -> None:
+def _prepare_store(db: Path, corpus: Path) -> None:
     init_store(db)
     if count_docs(db) == 0:
-        build_index(load_corpus(CORPUS), db)
+        build_index(load_corpus(corpus), db)
 
 
 def _spa_route(app: FastAPI, static_dir: Path) -> None:
@@ -67,18 +67,19 @@ def create_app(
     db: Path,
     make_clients: Callable[[Settings], Clients] = real_clients,
     static_dir: Path | None = None,
+    corpus: Path = CORPUS,
 ) -> FastAPI:
     """Build the API app over the database db with the models from make_clients.
 
     All state (settings, db, clients, rate-limit buckets) lives on app.state. On startup the run store is
-    created and, if the docs table is missing or empty, built from data/corpus.json. When static_dir exists
+    created and, if the docs table is missing or empty, built from corpus (default data/corpus.json). When static_dir exists
     its files are served with a fallback to index.html for GET paths outside /api. CORS allows only the
     Vite dev origin.
     """
 
     @asynccontextmanager
     async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
-        _prepare_store(db)
+        _prepare_store(db, corpus)
         yield
 
     app = FastAPI(title="fact-checker", lifespan=lifespan)
@@ -95,6 +96,14 @@ def create_app(
 
 
 def create_app_from_env() -> FastAPI:
-    """Build the app from the environment: settings from env, FC_DB (default data/factcheck.sqlite), web/dist when built."""
+    """Build the app from the environment: settings from env and .env; paths from FC_DB, FC_WEB_DIST and FC_CORPUS.
+
+    The defaults are data/factcheck.sqlite, web/dist (served only when it exists) and data/corpus.json in the
+    source checkout; a deployment sets the variables when the package is installed elsewhere.
+    """
+    settings = settings_from_environment()
     db = Path(os.environ.get("FC_DB", DEFAULT_DB))
-    return create_app(settings_from_environment(), db, static_dir=WEB_DIST if WEB_DIST.is_dir() else None)
+    web_dist = Path(os.environ.get("FC_WEB_DIST", WEB_DIST))
+    corpus = Path(os.environ.get("FC_CORPUS", CORPUS))
+    static_dir = web_dist if web_dist.is_dir() else None
+    return create_app(settings, db, static_dir=static_dir, corpus=corpus)
