@@ -70,6 +70,7 @@ The reviewer step needs the [Codex CLI](https://github.com/openai/codex), signed
 | `fc show <run>` | print the answer |
 | `fc schema <confirmed\|retrieval\|verdicts\|final\|scores>` | print a contract's JSON Schema |
 | `fc eval prepare evals/cases <dir>` / `fc eval score evals/cases <dir>` | set up the seed eval cases / score them |
+| `fc eval run-claims evals/cases evals/runs/security-<date>` | run the claim-mode security cases; it calls the real models (about 45 calls), and the deterministic cases run in CI |
 
 Every command run against a run folder appends a line to `<run>/events.jsonl` with a timestamp, the papers returned, and a hash of the `final.json` it read. That shows the steps ran in order, and that what was displayed is what was reviewed.
 
