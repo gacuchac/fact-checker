@@ -2,7 +2,7 @@
 
 import pytest
 from fastapi.testclient import TestClient
-from pipeline_helpers import COMMITTED
+from pipeline_helpers import COMMITTED, review_output, v6_output
 
 from fact_checker.api.app import Clients, create_app
 from fact_checker.corpus import load_corpus
@@ -16,7 +16,7 @@ from fact_checker.services.schemas import (
     DecomposeOutput,
     FalsifiabilityOutput,
 )
-from fact_checker.store import list_spans
+from fact_checker.store import create_run, init_store, list_spans, update_run
 
 CODE = "sesame"
 HEADERS = {"X-Access-Code": CODE}
@@ -165,3 +165,25 @@ def test_s13b_a_run_gets_at_most_3_confirm_rounds(db):
         codes = [_confirm(client, run_id, "add", "It is probably good.").status_code for _ in range(5)]
     assert codes == [422, 422, 422, 409, 409]
     assert len(clients.check.calls) == 3
+
+
+def test_s14_cap_zero_refuses_every_claim_before_decompose(db):
+    app, clients = make_app(db, decompose=[decompose_output()], daily_run_cap=0)
+    with TestClient(app) as client:
+        codes = [client.post("/api/claims", json={"claim": CLAIM}, headers=HEADERS).status_code for _ in range(35)]
+    assert codes == [429] * 35
+    assert len(clients.decompose.calls) == 0
+
+
+def test_s14_verify_of_a_started_claim_is_not_counted_again(db):
+    app, _ = make_app(
+        db, decompose=[decompose_output()], verify=[v6_output()], review=[review_output()], daily_run_cap=1
+    )
+    with TestClient(app) as client:
+        run_id = client.post("/api/claims", json={"claim": CLAIM}, headers=HEADERS).json()["run_id"]
+        client.post(f"/api/claims/{run_id}/confirm", json={"edits": []}, headers=HEADERS)
+        init_store(db)
+        other = create_run(db, "another claim started today")
+        update_run(db, other, status="done")
+        response = client.post(f"/api/claims/{run_id}/verify", headers=HEADERS)
+    assert response.status_code == 202
