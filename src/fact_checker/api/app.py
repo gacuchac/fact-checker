@@ -19,7 +19,7 @@ from fact_checker.llm.openai_client import OpenAIClient
 from fact_checker.store import init_store
 
 from .routes import count_docs, health_router, router
-from .security import RateLimiter
+from .security import WRONG_CODES_PER_WINDOW, RateLimiter
 
 ROOT = Path(__file__).resolve().parents[3]
 CORPUS = ROOT / "data" / "corpus.json"
@@ -87,6 +87,7 @@ def create_app(
     app.state.db = db
     app.state.clients = make_clients(settings)
     app.state.rate_limiter = RateLimiter()
+    app.state.code_failures = RateLimiter(limit=WRONG_CODES_PER_WINDOW)
     app.add_middleware(CORSMiddleware, allow_origins=[DEV_ORIGIN], allow_methods=["*"], allow_headers=["*"])
     app.include_router(health_router)
     app.include_router(router)
