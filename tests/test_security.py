@@ -131,7 +131,7 @@ def test_s06_verify_error_shows_no_key_fragment(db):
 
 
 def _confirm(client, run_id, op, value):
-    edit = {"op": op, "id": 1 if op == "edit" else None, "value": value}
+    edit = {"op": op, "id": 0 if op == "edit" else None, "value": value}
     return client.post(f"/api/claims/{run_id}/confirm", json={"edits": [edit]}, headers=HEADERS)
 
 
