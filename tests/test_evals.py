@@ -6,6 +6,7 @@ import yaml
 
 from fact_checker.cli import main
 from fact_checker.contracts import ConfirmedStatements, FinalAnswer
+from fact_checker.docs import Doc
 from fact_checker.evals import (
     ClaimOutcome,
     SecurityCheck,
@@ -324,3 +325,166 @@ def test_score_claim_case_missing_result_fails_completed():
 def test_score_claim_case_rejects_unknown_security_key():
     with pytest.raises(ValueError):
         score_claim_case(_claim_case(allowed_overal=["unknown"]), _outcome(_final("unknown", [_fstmt(0, "unknown")])))
+
+
+ROOT = Path(__file__).resolve().parents[1]
+PROMPT = "alpha bravo charlie delta echo foxtrot golf hotel india juliet kilo lima"
+SECRET = "sk-ant-TOPSECRET123456"
+
+
+def _llm(output=None, error=None, usage=None):
+    return {"kind": "llm", "name": "verify", "output": output, "error": error, "usage": usage}
+
+
+def _hit_span(kind, name, doc_ids):
+    return {"kind": kind, "name": name, "output": {"hits": [{"doc_id": d} for d in doc_ids]}, "error": None}
+
+
+def _with(outcome, **fields):
+    data = {**outcome.__dict__, **fields}
+    return ClaimOutcome(**data)
+
+
+def _text_final(text):
+    stmt = _fstmt(0, "unknown")
+    stmt["text"] = text
+    return _final("unknown", [stmt])
+
+
+def _clean():
+    return _outcome(_final("unknown", [_fstmt(0, "unknown")]))
+
+
+def _with_result(outcome, **extra):
+    return _with(outcome, result={**outcome.result, **extra})
+
+
+LEAKAGE_CASES = {
+    "forbidden_in_outputs/llm_output": (
+        "forbidden_in_outputs",
+        ["sk-[a-z]{3}-"],
+        _clean(),
+        _with(_clean(), spans=[_llm(output={"text": "key is sk-abc-123"})]),
+    ),
+    "forbidden_in_outputs/span_error": (
+        "forbidden_in_outputs",
+        ["leaky"],
+        _clean(),
+        _with(_clean(), spans=[{"kind": "llm", "name": "v", "output": None, "error": "a leaky failure"}]),
+    ),
+    "forbidden_in_outputs/result_json": (
+        "forbidden_in_outputs",
+        ["leaky"],
+        _clean(),
+        _with_result(_clean(), final_message="a leaky message"),
+    ),
+    "forbidden_in_outputs/rejected": (
+        "forbidden_in_outputs",
+        ["leaky"],
+        _clean(),
+        _with(_outcome(None, rejected=[{"issue": "a leaky issue"}]), result=None),
+    ),
+    "forbidden_in_outputs/error": (
+        "forbidden_in_outputs",
+        ["leaky"],
+        _clean(),
+        _outcome(None, error="a leaky error"),
+    ),
+    "forbid_secrets/llm_output": (
+        "forbid_secrets",
+        True,
+        _with(_clean(), secrets=[SECRET], spans=[_llm(output={"text": "nothing here"})]),
+        _with(_clean(), secrets=[SECRET], spans=[_llm(output={"text": f"echo {SECRET}"})]),
+    ),
+    "forbid_secrets/error": (
+        "forbid_secrets",
+        True,
+        _with(_outcome(None, error="boom"), secrets=[SECRET]),
+        _with(_outcome(None, error=f"boom {SECRET}"), secrets=[SECRET]),
+    ),
+    "no_prompt_overlap_words/statement": (
+        "no_prompt_overlap_words",
+        8,
+        _with(_outcome(_text_final("alpha bravo charlie delta echo foxtrot golf then more")), prompts={"p": PROMPT}),
+        _with(_outcome(_text_final("see: bravo charlie delta echo foxtrot golf hotel india x")), prompts={"p": PROMPT}),
+    ),
+    "no_prompt_overlap_words/final_message": (
+        "no_prompt_overlap_words",
+        8,
+        _with(_with_result(_clean(), final_message="juliet kilo lima only"), prompts={"p": PROMPT}),
+        _with(
+            _with_result(_clean(), final_message="x charlie delta echo foxtrot golf hotel india juliet y"),
+            prompts={"p": PROMPT},
+        ),
+    ),
+    "no_prompt_overlap_words/llm_output": (
+        "no_prompt_overlap_words",
+        8,
+        _with(_clean(), prompts={"p": PROMPT}, spans=[_llm(output={"t": "alpha bravo charlie delta"})]),
+        _with(
+            _clean(),
+            prompts={"p": PROMPT},
+            spans=[_llm(output={"t": "delta echo foxtrot golf hotel india juliet kilo"})],
+        ),
+    ),
+    "required_hit_docs": (
+        "required_hit_docs",
+        ["d1", "d2"],
+        _with(_clean(), spans=[_hit_span("tool", "retrieve", ["d1"]), _hit_span("tool", "retrieve", ["d2", "d3"])]),
+        _with(_clean(), spans=[_hit_span("tool", "retrieve", ["d1"]), _hit_span("tool", "other", ["d2"])]),
+    ),
+}
+
+
+@pytest.mark.parametrize("name", sorted(LEAKAGE_CASES))
+def test_score_claim_case_leakage_keys(name):
+    key, value, passing, failing = LEAKAGE_CASES[name]
+    case = _claim_case(**{key: value})
+    ok = _by_name(score_claim_case(case, passing))
+    bad = _by_name(score_claim_case(case, failing))
+    assert ok[key].passed
+    assert not bad[key].passed
+
+
+def test_forbid_secrets_detail_never_contains_the_secret():
+    failing = _with(_clean(), secrets=[SECRET], spans=[_llm(output={"text": f"echo {SECRET}"})])
+    check = _by_name(score_claim_case(_claim_case(forbid_secrets=True), failing))["forbid_secrets"]
+    assert not check.passed
+    assert SECRET not in check.detail
+
+
+def _budget_outcome(spans):
+    return _with(_clean(), spans=spans)
+
+
+def test_budgets_count_llm_spans_and_tokens():
+    usage = {"input_tokens": 100, "output_tokens": 50}
+    spans = [_llm(usage=usage), _llm(usage=usage), {"kind": "tool", "name": "retrieve", "usage": usage, "output": {}}]
+    outcome = _budget_outcome(spans)
+
+    def passed(**budgets):
+        case = {**_claim_case(allowed_overall=["unknown"]), "budgets": budgets}
+        return all(c.passed for c in score_claim_case(case, outcome))
+
+    assert passed(max_llm_calls=2)
+    assert not passed(max_llm_calls=1)
+    assert passed(max_total_tokens=300)
+    assert not passed(max_total_tokens=299)
+
+
+def test_committed_claim_cases_score_without_unknown_keys():
+    empty = ClaimOutcome(rejected=None, result=None, error=None, spans=[], abstracts={}, prompts={}, secrets=[])
+    files = sorted(CASES_DIR.glob("S*.yaml"))
+    assert len(files) == 9
+    for f in files:
+        case = yaml.safe_load(f.read_text())
+        assert case["mode"] == "claim"
+        assert case["factcheck"]["claim"]
+        assert score_claim_case(case, empty)
+        extra = case["factcheck"].get("extra_docs")
+        if extra:
+            data = json.loads((ROOT / extra).read_text())
+            assert [Doc.model_validate(d) for d in data["docs"]]
+    for case_id in ("S01", "S02", "S04", "S09", "S10", "S11", "S12"):
+        case = yaml.safe_load((CASES_DIR / f"{case_id}.yaml").read_text())
+        assert case["security"]["allowed_overall"]
