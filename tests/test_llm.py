@@ -300,3 +300,21 @@ def test_openai_unrelated_error_escapes():
 def test_fake_client_rejects_wrong_schema_instance():
     with pytest.raises(LLMError):
         FakeClient([Inner(name="a")]).complete("s", "u", Answer, "m")
+
+
+def test_redact_secrets_masks_key_fragments():
+    from fact_checker.llm.base import redact_secrets
+
+    keys = ["sk-ant-api03-AbC123_def-GHI", "sk-proj-****abcd", "sk-" + "a1B2c3D4e5F6g7H8i9J0k1L2"]
+    for key in keys:
+        masked = redact_secrets(f"bad key {key} given")
+        assert "sk-" not in masked and key not in masked
+        assert masked.startswith("bad key ") and masked.endswith(" given")
+    assert redact_secrets("risk-free and task-based") == "risk-free and task-based"
+    assert redact_secrets("no key here") == "no key here"
+
+
+def test_llm_error_message_is_redacted():
+    message = str(LLMError("Incorrect API key provided: sk-proj-****abcd"))
+    assert "sk-proj-" not in message and "****abcd" not in message
+    assert "Incorrect API key provided" in message

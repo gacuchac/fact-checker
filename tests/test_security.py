@@ -7,6 +7,7 @@ from pipeline_helpers import COMMITTED
 from fact_checker.api.app import Clients, create_app
 from fact_checker.corpus import load_corpus
 from fact_checker.index import build_index
+from fact_checker.llm.base import LLMError
 from fact_checker.llm.config import Settings
 from fact_checker.llm.fake import FakeClient
 from fact_checker.retrieve import retrieve
@@ -89,3 +90,36 @@ def test_s16a_no_data_route_answers_without_the_code(db):
                 if response.status_code == 200 and ("claim" in response.text or "abstract" in response.text):
                     leaks.append((path, headers))
     assert leaks == []
+
+
+LEAKY = LLMError("OpenAI API call failed: Incorrect API key provided: sk-proj-****abcd")
+
+
+def _everything_visible(client, extra=""):
+    texts = [extra, client.get("/api/runs", headers=HEADERS).text]
+    for run in client.get("/api/runs", headers=HEADERS).json():
+        run_id = run["run_id"] if "run_id" in run else run["id"]
+        texts.append(client.get(f"/api/claims/{run_id}", headers=HEADERS).text)
+        texts.append(client.get(f"/api/runs/{run_id}/trace", headers=HEADERS).text)
+    return "\n".join(texts)
+
+
+def test_s06_decompose_error_shows_no_key_fragment(db):
+    app, _ = make_app(db, decompose=[LEAKY])
+    with TestClient(app) as client:
+        response = client.post("/api/claims", json={"claim": CLAIM}, headers=HEADERS)
+        seen = _everything_visible(client, response.text)
+    assert response.status_code == 502
+    assert "sk-proj-" not in seen and "****abcd" not in seen
+
+
+def test_s06_verify_error_shows_no_key_fragment(db):
+    app, _ = make_app(db, decompose=[decompose_output()], verify=[LEAKY])
+    with TestClient(app) as client:
+        run_id = client.post("/api/claims", json={"claim": CLAIM}, headers=HEADERS).json()["run_id"]
+        client.post(f"/api/claims/{run_id}/confirm", json={"edits": []}, headers=HEADERS)
+        client.post(f"/api/claims/{run_id}/verify", headers=HEADERS)
+        run = client.get(f"/api/claims/{run_id}", headers=HEADERS).json()
+        seen = _everything_visible(client)
+    assert run["status"] == "failed"
+    assert "sk-proj-" not in seen and "****abcd" not in seen
