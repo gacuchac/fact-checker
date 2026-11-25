@@ -3,7 +3,10 @@ from pathlib import Path
 
 import pytest
 import yaml
+from pipeline_helpers import review_output, v6_confirmed, v6_output
+from test_api import decompose_output
 
+from fact_checker.api.app import Clients
 from fact_checker.cli import main
 from fact_checker.contracts import ConfirmedStatements, FinalAnswer
 from fact_checker.docs import Doc
@@ -14,6 +17,7 @@ from fact_checker.evals import (
     score_claim_case,
     score_runs,
 )
+from fact_checker.llm.fake import FakeClient
 
 CASES_DIR = Path(__file__).resolve().parents[1] / "evals" / "cases"
 
@@ -488,3 +492,59 @@ def test_committed_claim_cases_score_without_unknown_keys():
     for case_id in ("S01", "S02", "S04", "S09", "S10", "S11", "S12"):
         case = yaml.safe_load((CASES_DIR / f"{case_id}.yaml").read_text())
         assert case["security"]["allowed_overall"]
+
+
+def _happy_clients(*_):
+    return Clients(
+        FakeClient([decompose_output()]), FakeClient([]), FakeClient([v6_output()]), FakeClient([review_output()])
+    )
+
+
+def _write_claim_case(directory, **security):
+    directory.mkdir(exist_ok=True)
+    case = {
+        "id": "C1",
+        "mode": "claim",
+        "factcheck": {"claim": v6_confirmed().claim, "edits": []},
+        "security": security,
+    }
+    (directory / "C1.yaml").write_text(yaml.safe_dump(case))
+
+
+def test_eval_prepare_and_score_skip_claim_cases(tmp_path, capsys):
+    cases, out = tmp_path / "cases", tmp_path / "out"
+    cases.mkdir()
+    (cases / "A.yaml").write_text(yaml.safe_dump(CASE_A))
+    _write_claim_case(cases)
+    assert main(["eval", "prepare", str(cases), str(out)]) == 0
+    assert sorted(p.name for p in out.iterdir()) == ["A"]
+    assert main(["eval", "score", str(cases), str(out)]) == 0
+    printed = capsys.readouterr().out
+    report, _ = json.JSONDecoder().raw_decode(printed[printed.index("{") :])
+    assert [row["id"] for row in report["rows"]] == ["A"]
+
+
+@pytest.mark.parametrize(("security", "exit_code"), [({}, 0), ({"allowed_overall": ["no-such-verdict"]}, 1)])
+def test_eval_run_claims_writes_outcome_and_checks_and_exit_code(tmp_path, monkeypatch, security, exit_code):
+    monkeypatch.setattr("fact_checker.cli.real_clients", _happy_clients, raising=False)
+    cases, out = tmp_path / "cases", tmp_path / "out"
+    _write_claim_case(cases, **security)
+    assert main(["eval", "run-claims", str(cases), str(out)]) == exit_code
+    outcome = json.loads((out / "C1" / "outcome.json").read_text())
+    assert "final" in outcome["result"]
+    assert "secrets" not in outcome
+    assert "prompts" not in outcome
+    checks = json.loads((out / "C1" / "checks.json").read_text())
+    assert checks[0]["name"] == "completed"
+    assert all(c["passed"] for c in checks) == (exit_code == 0)
+
+
+def test_eval_run_claims_never_writes_secrets(tmp_path, monkeypatch):
+    monkeypatch.setattr("fact_checker.cli.real_clients", _happy_clients, raising=False)
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-test-SECRETVALUE")
+    cases, out = tmp_path / "cases", tmp_path / "out"
+    _write_claim_case(cases, forbid_secrets=True)
+    main(["eval", "run-claims", str(cases), str(out)])
+    written = [p for p in out.rglob("*") if p.is_file()]
+    assert written
+    assert not any("SECRETVALUE" in p.read_text() for p in written)
