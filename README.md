@@ -137,7 +137,7 @@ One Railway service runs `uvicorn` with `fact_checker.api.app:create_app_from_en
 | Healthcheck | `/api/health` |
 | Variables | `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `FC_ACCESS_CODE`, `FC_DAILY_RUN_CAP`, the model names, `FC_DB=/data/factcheck.sqlite`, `FC_WEB_DIST=/app/web/dist`, `FC_CORPUS=/app/data/corpus.json` |
 
-- **Deploys:** every push to `dev` runs `.github/workflows/deploy.yml`, which uploads the checkout with `railway up --ci --service web` and fails if the Railway build fails. It authenticates with a Railway project token for the `production` environment, stored as the `RAILWAY_TOKEN` secret of the `dev` GitHub environment (deployments limited to the `dev` branch). The service's own GitHub autodeploy is off: Railway holds pushes from a GitHub user who isn't in the Railway workspace (the bot) for manual approval. To redeploy by hand, run the workflow from the Actions tab.
+- **Deploys:** every push to `dev` runs `.github/workflows/deploy.yml`, which uploads the checkout with `railway up --ci --service web` and fails if the Railway build fails. It authenticates with a Railway project token for the `production` environment, stored as the `RAILWAY_TOKEN` secret of the `fact-checker / production` GitHub environment (the one Railway's GitHub integration created). The service's own GitHub autodeploy is off: Railway holds pushes from a GitHub user who isn't in the Railway workspace (the bot) for manual approval. To redeploy by hand, run the workflow from the Actions tab.
 - **Database:** on a Railway volume at `/data`, so runs and traces survive redeploys.
 - **Secrets:** the API keys and the access code are Railway variables; nothing secret is in the repo.
 

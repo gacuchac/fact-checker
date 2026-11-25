@@ -15,14 +15,14 @@ concurrency:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    environment: dev
+    environment: fact-checker / production
     env:
       RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
     steps:
       - name: Check the deploy token
         run: |
           if [ -z "$RAILWAY_TOKEN" ]; then
-            echo "::error::Add a Railway project token for the production environment as the RAILWAY_TOKEN secret of the dev GitHub environment."
+            echo "::error::Add a Railway project token for the production environment as the RAILWAY_TOKEN secret of the 'fact-checker / production' GitHub environment."
             exit 1
           fi
       - uses: actions/checkout@v4
