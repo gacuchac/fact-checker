@@ -123,7 +123,7 @@ For frontend development, run `npm run dev` in `web/` (on port 5173, with `/api`
 Settings are environment variables (see `.env.example`):
 - the models and effort levels;
 - `FC_ACCESS_CODE`: when set, the app asks for it;
-- `FC_DAILY_RUN_CAP`: how many claims can be verified per day;
+- `FC_DAILY_RUN_CAP`: how many claims can be started per day;
 - `FC_DB`, `FC_WEB_DIST` and `FC_CORPUS`: file paths.
 
 ### Deployment
