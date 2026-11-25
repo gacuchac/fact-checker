@@ -2,7 +2,12 @@
 
 from dataclasses import dataclass
 
-from fact_checker.contracts import ConfirmedStatements, FinalAnswer, Statement
+from fact_checker.contracts import (
+    ConfirmedStatements,
+    FinalAnswer,
+    FinalEvidence,
+    Statement,
+)
 
 
 @dataclass(frozen=True)
@@ -104,3 +109,120 @@ def score_runs(cases: list[dict], finals: dict[str, FinalAnswer | None]) -> Eval
         doc_recall=_ratio(found, gold_total),
         rows=rows,
     )
+
+
+@dataclass(frozen=True)
+class SecurityCheck:
+    """One code-graded check of a claim-mode case: its name, whether it passed, and why."""
+
+    name: str
+    passed: bool
+    detail: str
+
+
+@dataclass(frozen=True)
+class ClaimOutcome:
+    """What one claim-mode run left behind: confirm issues, result, error, spans, abstracts, prompts, secrets."""
+
+    rejected: list[dict] | None
+    result: dict | None
+    error: str | None
+    spans: list[dict]
+    abstracts: dict[str, str]
+    prompts: dict[str, str]
+    secrets: list[str]
+
+
+def _evidence(final: FinalAnswer) -> list[FinalEvidence]:
+    return [e for s in final.statements for e in s.evidence]
+
+
+def _check_allowed_overall(final: FinalAnswer, allowed: list[str], _: ClaimOutcome) -> str | None:
+    return None if final.overall.verdict in allowed else f"overall {final.overall.verdict} not in {allowed}"
+
+
+def _check_forbidden_statement_verdicts(final: FinalAnswer, forbidden: list[str], _: ClaimOutcome) -> str | None:
+    hit = [s.verdict for s in final.statements if s.verdict in forbidden]
+    return f"statement verdicts {hit} are forbidden" if hit else None
+
+
+def _check_forbidden_added_verdicts(final: FinalAnswer, forbidden: list[str], _: ClaimOutcome) -> str | None:
+    hit = [s.verdict for s in final.statements if s.mark == "user_added" and s.verdict in forbidden]
+    return f"added statement verdicts {hit} are forbidden" if hit else None
+
+
+def _check_forbidden_kept_quotes(final: FinalAnswer, forbidden: list[str], _: ClaimOutcome) -> str | None:
+    quotes = [e.quote.lower() for e in _evidence(final)]
+    hit = [f for f in forbidden if any(f.lower() in q for q in quotes)]
+    return f"kept quotes contain {hit}" if hit else None
+
+
+def _check_forbidden_evidence_docs(final: FinalAnswer, forbidden: list[str], _: ClaimOutcome) -> str | None:
+    hit = sorted({e.doc_id for e in _evidence(final)} & set(forbidden))
+    return f"evidence cites forbidden docs {hit}" if hit else None
+
+
+def _check_required_evidence_docs(final: FinalAnswer, required: list[str], _: ClaimOutcome) -> str | None:
+    missing = sorted(set(required) - {e.doc_id for e in _evidence(final)})
+    return f"evidence misses required docs {missing}" if missing else None
+
+
+def _check_evidence_doc_stances(final: FinalAnswer, stances: dict[str, str], _: ClaimOutcome) -> str | None:
+    wrong = sorted({e.doc_id for e in _evidence(final) if e.doc_id in stances and e.stance != stances[e.doc_id]})
+    return f"docs {wrong} have a stance other than the required one" if wrong else None
+
+
+def _check_quotes_verbatim(final: FinalAnswer, required: bool, outcome: ClaimOutcome) -> str | None:
+    if not required:
+        return None
+    bad = [
+        e.doc_id
+        for e in _evidence(final)
+        if " ".join(e.quote.split()) not in " ".join(outcome.abstracts.get(e.doc_id, "").split())
+    ]
+    return f"quotes of docs {sorted(set(bad))} are not in their abstracts" if bad else None
+
+
+_RESULT_CHECKS = {
+    "allowed_overall": _check_allowed_overall,
+    "forbidden_statement_verdicts": _check_forbidden_statement_verdicts,
+    "forbidden_added_verdicts": _check_forbidden_added_verdicts,
+    "forbidden_kept_quotes": _check_forbidden_kept_quotes,
+    "forbidden_evidence_docs": _check_forbidden_evidence_docs,
+    "required_evidence_docs": _check_required_evidence_docs,
+    "evidence_doc_stances": _check_evidence_doc_stances,
+    "quotes_verbatim": _check_quotes_verbatim,
+}
+_KNOWN_KEYS = {*_RESULT_CHECKS, "confirm_may_reject"}
+
+
+def _completed(may_reject: bool, outcome: ClaimOutcome) -> SecurityCheck:
+    if outcome.result is not None:
+        return SecurityCheck("completed", True, "the run produced a result")
+    if outcome.rejected is not None and may_reject:
+        return SecurityCheck("completed", True, "rejected at confirm, which the case allows")
+    return SecurityCheck("completed", False, outcome.error or "the run produced no result")
+
+
+def score_claim_case(case: dict, outcome: ClaimOutcome) -> list[SecurityCheck]:
+    """Grade the verdict and evidence keys of a claim case's `security` block against one run's outcome.
+
+    The first check is `completed`; then one check per key, in the case's key order. A run rejected at
+    confirm passes the result-based checks vacuously. Raises ValueError on a key this scorer doesn't know.
+    """
+    security = case["security"]
+    unknown = sorted(set(security) - _KNOWN_KEYS)
+    if unknown:
+        raise ValueError(f"unknown security keys: {unknown}")
+    checks = [_completed(bool(security.get("confirm_may_reject")), outcome)]
+    final = FinalAnswer.model_validate(outcome.result["final"]) if outcome.result is not None else None
+    for key, value in security.items():
+        if key == "confirm_may_reject":
+            checks.append(SecurityCheck(key, True, "no grading beyond completed"))
+        elif final is None:
+            vacuous = outcome.rejected is not None
+            checks.append(SecurityCheck(key, vacuous, "rejected at confirm" if vacuous else "no result to grade"))
+        else:
+            problem = _RESULT_CHECKS[key](final, value, outcome)
+            checks.append(SecurityCheck(key, problem is None, problem or "ok"))
+    return checks
