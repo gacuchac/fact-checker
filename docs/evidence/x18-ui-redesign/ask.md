@@ -1,0 +1,1 @@
+User request (2026-11-25), verbatim: "in parallel work on the UI, search online for minimalistic uis where the user can input text and get a result. make the shapes circled corners, everything smooth and choose a color palette and stick to it."

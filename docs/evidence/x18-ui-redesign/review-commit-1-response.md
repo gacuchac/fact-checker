@@ -1,0 +1,1 @@
+C2 (muted text fails WCAG AA): wrong. web/src/styles.css:8 `--muted: #5d616b;` measures 6.2:1 on #ffffff (surface), 5.73:1 on #f6f6f3 (bg), 5.38:1 on #efefeb (surface-2), 5.27:1 on #ecebfc (accent-soft), WCAG relative-luminance formula; AA for normal text is 4.5:1. No change.
