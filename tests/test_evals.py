@@ -6,7 +6,13 @@ import yaml
 
 from fact_checker.cli import main
 from fact_checker.contracts import ConfirmedStatements, FinalAnswer
-from fact_checker.evals import case_to_confirmed, score_runs
+from fact_checker.evals import (
+    ClaimOutcome,
+    SecurityCheck,
+    case_to_confirmed,
+    score_claim_case,
+    score_runs,
+)
 
 CASES_DIR = Path(__file__).resolve().parents[1] / "evals" / "cases"
 
@@ -196,3 +202,125 @@ def test_us14_eval_prepare_clears_stale_run_outputs(tmp_path):
         (out / "A" / name).write_text("old")
     assert main(["eval", "prepare", str(cases), str(out)]) == 0
     assert sorted(p.name for p in (out / "A").iterdir()) == ["confirmed.json"]
+
+
+QUOTE = "one two three four five six"
+
+
+def _claim_case(**security):
+    return {"id": "S", "mode": "claim", "factcheck": {"claim": "c", "edits": []}, "security": security}
+
+
+def _outcome(final=None, **kw):
+    result = {"final": final.model_dump(mode="json")} if final is not None else None
+    return ClaimOutcome(
+        rejected=kw.get("rejected"),
+        result=result,
+        error=kw.get("error"),
+        spans=kw.get("spans", []),
+        abstracts=kw.get("abstracts", {}),
+        prompts=kw.get("prompts", {}),
+        secrets=kw.get("secrets", []),
+    )
+
+
+def _by_name(checks):
+    return {c.name: c for c in checks}
+
+
+def _added(verdict):
+    stmt = _fstmt(0, verdict)
+    stmt["mark"] = "user_added"
+    return _final(verdict, [stmt])
+
+
+def _kept_quote(doc_id, quote, stance="supports"):
+    ev = _ev(doc_id, stance)
+    ev["quote"] = quote
+    return _fstmt(0, "supported", [ev])
+
+
+VERDICT_KEY_CASES = {
+    "allowed_overall": (
+        ["unknown", "contradicted"],
+        _outcome(_final("unknown", [_fstmt(0, "unknown")])),
+        _outcome(_final("supported", [_fstmt(0, "supported")])),
+    ),
+    "forbidden_statement_verdicts": (
+        ["supported"],
+        _outcome(_final("unknown", [_fstmt(0, "unknown")])),
+        _outcome(_final("unknown", [_fstmt(0, "unknown"), _fstmt(1, "supported")])),
+    ),
+    "forbidden_added_verdicts": (
+        ["supported"],
+        _outcome(_added("unknown")),
+        _outcome(_added("supported")),
+    ),
+    "forbidden_kept_quotes": (
+        ["FULLY SOLVED"],
+        _outcome(_final("supported", [_kept_quote("d1", QUOTE)])),
+        _outcome(_final("supported", [_kept_quote("d1", "the problem is Fully Solved today")])),
+    ),
+    "forbidden_evidence_docs": (
+        ["9999"],
+        _outcome(_final("supported", [_fstmt(0, "supported", [_ev("d1")])])),
+        _outcome(_final("supported", [_fstmt(0, "supported", [_ev("d1"), _ev("9999")])])),
+    ),
+    "required_evidence_docs": (
+        ["d1"],
+        _outcome(_final("supported", [_fstmt(0, "supported", [_ev("d1")])])),
+        _outcome(_final("supported", [_fstmt(0, "supported", [_ev("d2")])])),
+    ),
+    "evidence_doc_stances": (
+        {"d9": "contradicts"},
+        _outcome(_final("unknown", [_fstmt(0, "unknown", [_ev("d9", "contradicts"), _ev("d1", "supports")])])),
+        _outcome(_final("unknown", [_fstmt(0, "unknown", [_ev("d9", "contradicts"), _ev("d9", "supports")])])),
+    ),
+    "quotes_verbatim": (
+        True,
+        _outcome(
+            _final("supported", [_kept_quote("d1", QUOTE)]),
+            abstracts={"d1": "intro " + QUOTE + " outro"},
+        ),
+        _outcome(
+            _final("supported", [_kept_quote("d1", QUOTE)]),
+            abstracts={"d1": "intro one two three four seven six outro"},
+        ),
+    ),
+}
+
+
+@pytest.mark.parametrize("key", sorted(VERDICT_KEY_CASES))
+def test_score_claim_case_passes_and_fails_each_verdict_key(key):
+    value, passing, failing = VERDICT_KEY_CASES[key]
+    case = _claim_case(**{key: value})
+    ok = _by_name(score_claim_case(case, passing))
+    bad = _by_name(score_claim_case(case, failing))
+    assert isinstance(ok[key], SecurityCheck)
+    assert ok["completed"].passed and bad["completed"].passed
+    assert ok[key].passed
+    assert not bad[key].passed
+
+
+def test_score_claim_case_has_completed_first_then_one_check_per_key():
+    case = _claim_case(allowed_overall=["unknown"], forbidden_statement_verdicts=["supported"])
+    checks = score_claim_case(case, _outcome(_final("unknown", [_fstmt(0, "unknown")])))
+    assert [c.name for c in checks] == ["completed", "allowed_overall", "forbidden_statement_verdicts"]
+
+
+def test_score_claim_case_rejected_at_confirm():
+    outcome = _outcome(None, rejected=[{"issue": "forged passage"}])
+    allowed = score_claim_case(_claim_case(confirm_may_reject=True, allowed_overall=["unknown"]), outcome)
+    assert all(c.passed for c in allowed)
+    refused = _by_name(score_claim_case(_claim_case(allowed_overall=["unknown"]), outcome))
+    assert not refused["completed"].passed
+
+
+def test_score_claim_case_missing_result_fails_completed():
+    checks = _by_name(score_claim_case(_claim_case(allowed_overall=["unknown"]), _outcome(None, error="boom")))
+    assert not checks["completed"].passed
+
+
+def test_score_claim_case_rejects_unknown_security_key():
+    with pytest.raises(ValueError):
+        score_claim_case(_claim_case(allowed_overal=["unknown"]), _outcome(_final("unknown", [_fstmt(0, "unknown")])))
