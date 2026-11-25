@@ -201,7 +201,15 @@ def test_us14_duplicate_statement_ids_do_not_cover_a_missing_gold_statement():
 def test_us14_eval_prepare_clears_stale_run_outputs(tmp_path):
     cases, out = tmp_path / "cases", tmp_path / "out"
     _write_cases(cases)
-    stale = ("verdicts.json", "final.json", "scores.json", "transcript.md", "trace.jsonl", "checks.json", "events.jsonl")
+    stale = (
+        "verdicts.json",
+        "final.json",
+        "scores.json",
+        "transcript.md",
+        "trace.jsonl",
+        "checks.json",
+        "events.jsonl",
+    )
     (out / "A").mkdir(parents=True)
     for name in stale:
         (out / "A" / name).write_text("old")
@@ -548,3 +556,32 @@ def test_eval_run_claims_never_writes_secrets(tmp_path, monkeypatch):
     written = [p for p in out.rglob("*") if p.is_file()]
     assert written
     assert not any("SECRETVALUE" in p.read_text() for p in written)
+
+
+def _two_run_clients(*_):
+    return Clients(
+        FakeClient([decompose_output()] * 2),
+        FakeClient([]),
+        FakeClient([v6_output()] * 2),
+        FakeClient([review_output()] * 2),
+    )
+
+
+def _write_mixed_cases(directory):
+    directory.mkdir()
+    (directory / "A.yaml").write_text(yaml.safe_dump(CASE_A))
+    for case_id in ("C1", "C2"):
+        factcheck = {"claim": v6_confirmed().claim, "edits": []}
+        case = {"id": case_id, "mode": "claim", "factcheck": factcheck, "security": {}}
+        (directory / f"{case_id}.yaml").write_text(yaml.safe_dump(case))
+
+
+def test_eval_run_claims_runs_only_claim_cases_and_honours_case_filter(tmp_path, monkeypatch):
+    monkeypatch.setattr("fact_checker.cli.real_clients", _two_run_clients, raising=False)
+    cases = tmp_path / "cases"
+    _write_mixed_cases(cases)
+    out_all, out_one = tmp_path / "all", tmp_path / "one"
+    main(["eval", "run-claims", str(cases), str(out_all)])
+    assert sorted(p.name for p in out_all.iterdir()) == ["C1", "C2"]
+    main(["eval", "run-claims", str(cases), str(out_one), "--case", "C2"])
+    assert sorted(p.name for p in out_one.iterdir()) == ["C2"]
