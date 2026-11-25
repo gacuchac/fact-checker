@@ -90,7 +90,7 @@ function ReviewPanel({ scores }: { scores: JudgeScores }): JSX.Element {
 function Answer({ answer, scores }: { answer: FinalAnswer; scores: JudgeScores | null }): JSX.Element {
   return (
     <>
-      <p>
+      <p className="overall">
         <Badge kind={answer.overall.verdict} testId="result-overall" /> <span className="muted">rule {answer.overall.rule}</span>
       </p>
       {answer.statements.map((statement) => (
@@ -145,7 +145,7 @@ export function ResultView({ runId, result }: Props): JSX.Element {
       <pre data-testid="final-message" className="final-message">
         {result.final_message}
       </pre>
-      <Link to={`/traces/${runId}`} data-testid="view-trace">
+      <Link to={`/traces/${runId}`} className="button-link" data-testid="view-trace">
         View trace
       </Link>
     </div>

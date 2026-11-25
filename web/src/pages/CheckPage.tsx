@@ -106,35 +106,37 @@ export function CheckPage({ pollMs = 2000 }: Props): JSX.Element {
   return (
     <div className="check">
       <h1>Check a claim</h1>
-      <textarea
-        data-testid="claim-input"
-        value={claim}
-        maxLength={500}
-        rows={3}
-        disabled={phase.name !== "entry"}
-        placeholder="Type a claim to fact-check"
-        onChange={(e) => setClaim(e.target.value)}
-      />
-      {phase.name === "entry" && (
-        <button type="button" data-testid="decompose-button" disabled={busy || claim.trim() === ""} onClick={() => void breakDown()}>
-          Break down
-        </button>
-      )}
+      <div className="composer">
+        <textarea
+          data-testid="claim-input"
+          value={claim}
+          maxLength={500}
+          rows={3}
+          disabled={phase.name !== "entry"}
+          placeholder="Type a claim to fact-check"
+          onChange={(e) => setClaim(e.target.value)}
+        />
+        {phase.name === "entry" && (
+          <button type="button" className="primary" data-testid="decompose-button" disabled={busy || claim.trim() === ""} onClick={() => void breakDown()}>
+            Break down
+          </button>
+        )}
+      </div>
       {error !== null && <p className="issue">{error}</p>}
       {phase.name === "review" && (
-        <>
+        <section className="review">
           <h2>Statements</h2>
           <StatementsTable rows={rows} added={added} issues={issues} onRows={setRows} onAdded={setAdded} />
           {confirmed ? (
-            <button type="button" data-testid="retry-verify-button" disabled={busy} onClick={() => void approve(phase.runId)}>
+            <button type="button" className="primary" data-testid="retry-verify-button" disabled={busy} onClick={() => void approve(phase.runId)}>
               Retry verification
             </button>
           ) : (
-            <button type="button" data-testid="approve-button" disabled={busy} onClick={() => void approve(phase.runId)}>
+            <button type="button" className="primary" data-testid="approve-button" disabled={busy} onClick={() => void approve(phase.runId)}>
               Approve &amp; verify
             </button>
           )}
-        </>
+        </section>
       )}
       {phase.name === "working" && <Progress status={phase.status} />}
       {phase.name === "failed" && <p className="issue">The check failed: {phase.error}</p>}
