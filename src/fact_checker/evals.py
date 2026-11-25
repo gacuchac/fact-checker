@@ -195,6 +195,8 @@ _RESULT_CHECKS = {
     "evidence_doc_stances": _check_evidence_doc_stances,
     "quotes_verbatim": _check_quotes_verbatim,
 }
+
+
 def _llm_spans(outcome: ClaimOutcome) -> list[dict]:
     return [s for s in outcome.spans if s.get("kind") == "llm"]
 
