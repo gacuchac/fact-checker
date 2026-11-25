@@ -187,3 +187,56 @@ def test_s14_verify_of_a_started_claim_is_not_counted_again(db):
         update_run(db, other, status="done")
         response = client.post(f"/api/claims/{run_id}/verify", headers=HEADERS)
     assert response.status_code == 202
+
+
+def _post_claim(client, ip):
+    return client.post("/api/claims", json={"claim": CLAIM}, headers={**HEADERS, "X-Real-IP": ip}).status_code
+
+
+def test_s15_rate_limit_keys_on_the_configured_client_ip_header(db):
+    outputs = [decompose_output() for _ in range(35)]
+    app, _ = make_app(db, decompose=outputs, daily_run_cap=100, client_ip_header="X-Real-IP")
+    with TestClient(app) as client:
+        first = [_post_claim(client, "1.1.1.1") for _ in range(30)]
+        blocked = _post_claim(client, "1.1.1.1")
+        other = _post_claim(client, "2.2.2.2")
+    assert 429 not in first
+    assert blocked == 429
+    assert other != 429
+
+    shared, _ = make_app(db, decompose=outputs, daily_run_cap=100)
+    with TestClient(shared) as client:
+        for _ in range(30):
+            _post_claim(client, "1.1.1.1")
+        ignored = _post_claim(client, "2.2.2.2")
+    assert ignored == 429
+
+
+def _get_runs(client, code, ip="1.1.1.1"):
+    return client.get("/api/runs", headers={"X-Access-Code": code, "X-Real-IP": ip}).status_code
+
+
+def test_s16b_wrong_codes_are_throttled_after_10_a_minute(db):
+    app, _ = make_app(db, client_ip_header="X-Real-IP")
+    with TestClient(app) as client:
+        first = [_get_runs(client, "wrong") for _ in range(10)]
+        eleventh = _get_runs(client, "wrong")
+        right_same_client = _get_runs(client, CODE)
+        right_other_client = _get_runs(client, CODE, ip="2.2.2.2")
+    assert first == [401] * 10
+    assert eleventh == 429
+    assert right_same_client == 429
+    assert right_other_client == 200
+
+
+def test_s16b_missing_code_is_not_counted_as_a_guess(db):
+    app, _ = make_app(db)
+    with TestClient(app) as client:
+        missing = [client.get("/api/runs").status_code for _ in range(15)]
+        right = client.get("/api/runs", headers=HEADERS).status_code
+        wrong = [client.get("/api/runs", headers={"X-Access-Code": "wrong"}).status_code for _ in range(10)]
+        after = client.get("/api/runs", headers={"X-Access-Code": "wrong"}).status_code
+    assert missing == [401] * 15
+    assert right == 200
+    assert wrong == [401] * 10
+    assert after == 429

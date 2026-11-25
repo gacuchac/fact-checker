@@ -318,3 +318,8 @@ def test_llm_error_message_is_redacted():
     message = str(LLMError("Incorrect API key provided: sk-proj-****abcd"))
     assert "sk-proj-" not in message and "****abcd" not in message
     assert "Incorrect API key provided" in message
+
+
+def test_load_settings_reads_client_ip_header():
+    assert load_settings({"FC_CLIENT_IP_HEADER": "X-Real-IP"}).client_ip_header == "X-Real-IP"
+    assert load_settings({}).client_ip_header is None
