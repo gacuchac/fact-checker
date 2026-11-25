@@ -1,11 +1,13 @@
 """The LLM client protocol, its errors and usage record, and the strict JSON Schema builder."""
 
 import json
+import re
 from typing import Any, Protocol
 
 from pydantic import BaseModel, ValidationError
 
 _DROPPED_KEYS = frozenset({"default", "title"})
+_KEY_PATTERN = re.compile(r"\bsk-[A-Za-z0-9_*-]*")
 
 
 class Usage(BaseModel):
@@ -18,8 +20,17 @@ class Usage(BaseModel):
     raw_text: str | None = None
 
 
+def redact_secrets(text: str) -> str:
+    """Return `text` with each `sk-` key-like token replaced by `[redacted key]`."""
+    return _KEY_PATTERN.sub("[redacted key]", text)
+
+
 class LLMError(Exception):
-    """A model call failed or returned unusable output."""
+    """A model call failed or returned unusable output; its message never holds a key fragment."""
+
+    def __init__(self, message: str = "") -> None:
+        """Store `message` with key-like tokens redacted."""
+        super().__init__(redact_secrets(message))
 
 
 class LLMRefusal(LLMError):
