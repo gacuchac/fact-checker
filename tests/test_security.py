@@ -11,7 +11,12 @@ from fact_checker.llm.base import LLMError
 from fact_checker.llm.config import Settings
 from fact_checker.llm.fake import FakeClient
 from fact_checker.retrieve import retrieve
-from fact_checker.services.schemas import DecomposedStatement, DecomposeOutput
+from fact_checker.services.schemas import (
+    DecomposedStatement,
+    DecomposeOutput,
+    FalsifiabilityOutput,
+)
+from fact_checker.store import list_spans
 
 CODE = "sesame"
 HEADERS = {"X-Access-Code": CODE}
@@ -123,3 +128,40 @@ def test_s06_verify_error_shows_no_key_fragment(db):
         seen = _everything_visible(client)
     assert run["status"] == "failed"
     assert "sk-proj-" not in seen and "****abcd" not in seen
+
+
+def _confirm(client, run_id, op, value):
+    edit = {"op": op, "id": 1 if op == "edit" else None, "value": value}
+    return client.post(f"/api/claims/{run_id}/confirm", json={"edits": [edit]}, headers=HEADERS)
+
+
+def _edit_spans(db, run_id):
+    return [s for s in list_spans(db, run_id) if s.kind == "user" and s.name == "edits"]
+
+
+def test_s13a_long_statement_text_is_rejected_before_any_model_call(db):
+    ok = FalsifiabilityOutput(falsifiable=True, reason="", query="LongAlign long context")
+    app, clients = make_app(db, decompose=[decompose_output()], check=[ok])
+    with TestClient(app) as client:
+        run_id = client.post("/api/claims", json={"claim": CLAIM}, headers=HEADERS).json()["run_id"]
+        too_long_edit = _confirm(client, run_id, "edit", "x" * 501)
+        huge_add = _confirm(client, run_id, "add", "y" * 200_000)
+        status = client.get(f"/api/claims/{run_id}", headers=HEADERS).json()["status"]
+        spans_after_refusals = _edit_spans(db, run_id)
+        calls_after_refusals = len(clients.check.calls)
+        exact = _confirm(client, run_id, "edit", "z" * 500)
+    assert too_long_edit.status_code == 422 and isinstance(too_long_edit.json()["detail"], str)
+    assert huge_add.status_code == 422 and isinstance(huge_add.json()["detail"], str)
+    assert "500" in too_long_edit.json()["detail"]
+    assert calls_after_refusals == 0 and status == "proposed" and spans_after_refusals == []
+    assert exact.status_code == 200
+
+
+def test_s13b_a_run_gets_at_most_3_confirm_rounds(db):
+    no = FalsifiabilityOutput(falsifiable=False, reason="hedge", query="")
+    app, clients = make_app(db, decompose=[decompose_output()], check=[no] * 5)
+    with TestClient(app) as client:
+        run_id = client.post("/api/claims", json={"claim": CLAIM}, headers=HEADERS).json()["run_id"]
+        codes = [_confirm(client, run_id, "add", "It is probably good.").status_code for _ in range(5)]
+    assert codes == [422, 422, 422, 409, 409]
+    assert len(clients.check.calls) == 3
