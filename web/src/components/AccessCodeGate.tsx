@@ -47,7 +47,7 @@ export function AccessCodeGate({ children }: Props): JSX.Element {
               value={value}
               onChange={(e) => setValue(e.target.value)}
             />
-            <button data-testid="access-code-submit" type="submit">Continue</button>
+            <button className="primary" data-testid="access-code-submit" type="submit">Continue</button>
           </form>
         </div>
       )}

@@ -28,7 +28,7 @@ export function AbstractsPage(): JSX.Element {
       <h1>Abstracts</h1>
       <form className="search" onSubmit={search}>
         <input data-testid="doc-search" type="search" value={query} placeholder="Search papers" onChange={(e) => setQuery(e.target.value)} />
-        <button type="submit">Search</button>
+        <button type="submit" className="primary">Search</button>
       </form>
       {error !== null && <LoadError message={error} retry={() => void runSearch()} />}
       {docs !== null && docs.length === 0 && <p className="muted">No papers found.</p>}
