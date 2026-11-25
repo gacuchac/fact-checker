@@ -36,7 +36,7 @@ function TextCell({ text, onSave }: TextCellProps): JSX.Element {
   }
   return (
     <>
-      <input data-testid="statement-edit-input" value={draft} onChange={(e) => setDraft(e.target.value)} />{" "}
+      <input data-testid="statement-edit-input" maxLength={500} value={draft} onChange={(e) => setDraft(e.target.value)} />{" "}
       <button type="button" data-testid="statement-edit-save" onClick={() => { onSave(draft); setEditing(false); }}>
         Save
       </button>
@@ -116,6 +116,7 @@ export function StatementsTable({ rows, added, issues, onRows, onAdded }: Props)
               <td colSpan={4}>
                 <input
                   data-testid="added-input"
+                  maxLength={500}
                   placeholder="New statement"
                   value={item.text}
                   onChange={(e) => onAdded(replaceAt(added, index, { ...item, text: e.target.value }))}
