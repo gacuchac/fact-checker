@@ -25,6 +25,7 @@ from fact_checker.store import (
 from .security import limit_posts, require_access_code
 
 MAX_CLAIM_CHARS = 500
+MAX_CONFIRM_ROUNDS = 3
 
 
 class ClaimRequest(BaseModel):
@@ -93,11 +94,27 @@ def post_claim(body: ClaimRequest, request: Request) -> dict:
     return {"run_id": run_id, "claim": body.claim, "proposed": [s.model_dump() for s in proposed]}
 
 
+def _check_edit_lengths(edits: list[Edit]) -> None:
+    if any(len(e.value or "") > MAX_CLAIM_CHARS for e in edits):
+        raise HTTPException(status_code=422, detail=f"statement text must be at most {MAX_CLAIM_CHARS} characters")
+
+
+def _confirm_rounds(db: Path, run_id: str) -> int:
+    return sum(1 for s in list_spans(db, run_id) if (s.kind, s.name) == ("user", "edits"))
+
+
 @router.post("/api/claims/{run_id}/confirm")
 def post_confirm(run_id: str, body: ConfirmRequest, request: Request):
-    """Apply the edits and confirm the statements: 200 {"confirmed"}, 422 {"issues"} or {"detail"}, 409 unless proposed, 404, 502."""
+    """Apply the edits and confirm the statements.
+
+    200 {"confirmed"}; 422 {"issues"} or {"detail"} (also a statement over 500 characters); 409 unless proposed
+    or after 3 confirm rounds; 404; 502.
+    """
     state = request.app.state
     _require_status(_run_or_404(request, run_id).status, "proposed")
+    _check_edit_lengths(body.edits)
+    if _confirm_rounds(state.db, run_id) >= MAX_CONFIRM_ROUNDS:
+        raise HTTPException(status_code=409, detail="too many confirm rounds, start a new claim")
     try:
         outcome = confirm_claim(state.db, run_id, body.edits, state.clients.check, state.settings)
     except ValueError as error:
