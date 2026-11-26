@@ -1,9 +1,10 @@
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
+import { ResultView } from "../src/components/ResultView";
 import { CheckPage } from "../src/pages/CheckPage";
 import type { ClaimRun, Statement } from "../src/types";
-import { checkResult, mockFetch, type FetchCall, type Handler, scores, statement } from "./helpers";
+import { checkResult, finalStatement, mockFetch, type FetchCall, type Handler, scores, statement } from "./helpers";
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -250,5 +251,58 @@ describe("Check page", () => {
     await breakDown();
     await userEvent.click(screen.getByTestId("approve-button"));
     expect(await screen.findByText(/too many statements/)).toBeInTheDocument();
+  });
+});
+
+const EXPLAINED = /if this statement is false, the whole claim is false/i;
+
+describe("Load-bearing explanation", () => {
+  it("shows a visible hint above the statements and describes each load-bearing checkbox with it", async () => {
+    setup(() => undefined);
+    await breakDown();
+    const hint = screen.getByTestId("load-bearing-hint");
+    expect(hint).toBeVisible();
+    expect(hint).toHaveTextContent(EXPLAINED);
+    expect(hint).toHaveTextContent(/only load-bearing statements decide the overall verdict/i);
+    const boxes = screen.getAllByTestId("statement-load-bearing");
+    expect(boxes).toHaveLength(2);
+    for (const box of boxes) expect(box).toHaveAccessibleDescription(EXPLAINED);
+    expect(screen.getByRole("columnheader", { name: "Load-bearing" })).toHaveAttribute("title", expect.stringMatching(EXPLAINED));
+  });
+
+  it("explains the load-bearing tag on the result, in the final and the first answer", async () => {
+    const final = { ...checkResult().final, statements: [finalStatement(1), finalStatement(2, { load_bearing: false })] };
+    render(
+      <MemoryRouter>
+        <ResultView runId="r1" result={checkResult({ final, revised: true })} />
+      </MemoryRouter>,
+    );
+    await userEvent.click(screen.getByTestId("first-answer-toggle"));
+    const hints = screen.getAllByTestId("load-bearing-hint");
+    expect(hints).toHaveLength(2);
+    for (const hint of hints) expect(hint).toHaveTextContent(EXPLAINED);
+    const tags = screen.getAllByText("load-bearing", { selector: ".tag" });
+    expect(tags).toHaveLength(2);
+    for (const tag of tags) {
+      expect(tag).toHaveAccessibleDescription(EXPLAINED);
+      expect(tag).toHaveAttribute("title", expect.stringMatching(EXPLAINED));
+    }
+    expect(new Set(hints.map((h) => h.id)).size).toBe(2);
+  });
+
+  it("shows the hint on a result only when a statement is load-bearing", () => {
+    const final = { ...checkResult().final, statements: [finalStatement(1, { load_bearing: false })] };
+    const { rerender } = render(
+      <MemoryRouter>
+        <ResultView runId="r1" result={checkResult()} />
+      </MemoryRouter>,
+    );
+    expect(screen.getByTestId("load-bearing-hint")).toHaveTextContent(EXPLAINED);
+    rerender(
+      <MemoryRouter>
+        <ResultView runId="r1" result={checkResult({ final })} />
+      </MemoryRouter>,
+    );
+    expect(screen.queryByTestId("load-bearing-hint")).toBeNull();
   });
 });
