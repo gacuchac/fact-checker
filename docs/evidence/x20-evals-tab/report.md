@@ -1,0 +1,44 @@
+## Decisions
+2026-11-25 | plan review 1 (4 findings) | correct | sent back to decomposer once; revised plan copied in |  | 
+2026-11-25T19:18:36 | u1 commit_tests | commit | test(US-1): Case view model, statements mode, loader and malformed files | c91278c1d35f80cea038836c3ccd876715be937d | 
+2026-11-25T19:19:30 | u1 commit_fix | commit | US-1: Case view model, statements mode, loader and malformed files | ca8daf651e2ad22c5053302b55becccae2157546 | 
+2026-11-25 | u1 evidence record ca8daf6 incomplete (red [], test_judge failure: venv imported fact_checker from the worktree src, not the temp tree) | re-measured | worktree .venv now puts <cwd>/src on sys.path; evidence_record.py write --sha ca8daf6 gives a complete record (9 added, 9 red, 9 green, 0 failed) |  | 
+2026-11-25T19:21:30 | u2 commit_tests | commit | test(US-1): Claim mode: documents, flags and human-readable security checks | b78553aae161b5343c4592f199ea23bece02c2ba | 
+2026-11-25T19:22:19 | u2 commit_fix | commit | US-1: Claim mode: documents, flags and human-readable security checks | f93af8f4c92889305ca834cb0171e3931d44f7ab | 
+2026-11-25T19:23:05 | u3 commit_tests | commit | test(US-1, US-4): `GET /api/evals`, `FC_EVALS` wiring and deploy docs | acadeae17c5b11740c726753248e0c4b59479e48 | 
+2026-11-25T19:24:02 | u3 tests_decide | wrong | T4: The test already pins the error to the malformed entry by position and pins the order: line 377 requires errors exactly [False, False, True], so an error on the wrong entry, or a missing one, fails; lines 368-370 require body[0].id == 'A1' and body[1].mode == 'claim', so the file-name order a.yaml, b.yaml, c.yaml is checked. The finding's claim that it 'checks only that an error exists' is contradicted by the line itself.;     assert [e["error"] is not None for e in body] == [False, False, True] | tests/test_api.py:377 | verify
+2026-11-25T19:24:11 | u3 commit_fix | commit | US-1, US-4: `GET /api/evals`, `FC_EVALS` wiring and deploy docs | 4bafd5aaf5ccef7c171d6bbf6b4f0a316f045862 | 
+2026-11-25 | engine stopped before the web units 4-5 (red run is pytest-only) | built by hand test-first; each commit reviewed | orchestrator report; units 1-3 by the engine |  | 
+2026-11-25 | commit review C5 on 47c2263 (S11 test dropped the Search must find check) | wrong | tests/test_eval_cases.py:182 assert v.must_find_docs == ["2307.03172v3"]; :184 now asserts the exact checks list |  | 
+2026-11-25 | renamed test ids eval-mode/eval-filter-statements/eval-filter-claim to eval-category/eval-filter-factcheck/eval-filter-security | accepted | the filter now goes by category (OWASP tags), not mode; nothing in e2e/ used the old ids |  | 
+2026-11-25 | principles P3 (create_app evals param) | overstated | additive keyword with default EVALS, listed in plan Contracts; no caller changes |  | 
+2026-11-25 | alternatives L2 (validate claim field) | follow-up | alternatives are reported, not acted on |  | 
+2026-11-25 | answers-ask A1,A2 (no screenshot commit) | overstated | plan unit 7 saves screenshots to the run folder shots/, not the repo |  | 
+2026-11-25 | answers-ask A4,A5 (S11 assertion) | overstated | C5 dismissal logged above with tests/test_eval_cases.py:182 |  | 
+2026-11-25 | commit review C4 on d38fe36 (single-abstract cases) | overstated | ask.md follow-up (user, verbatim): broader coverage and fewer brittle cases; multi-abstract was the rule for Q01-Q16 |  | 
+2026-11-25T19:41:03 | review-commit-12 on 79b6ce4: C2/C4 FAIL (tests reverse the plan's statements-mode gold_doc_ids -> must_cite_docs mapping) | rejected: wrong | the plan mapping is what PR review 1 flagged (review-pr-1.md finding 1); gold_doc_ids are scored as aggregate recall at src/fact_checker/evals.py:94 and :107, not as required citations; the main session ordered the split into expected_docs (Step G/H), so the tests intentionally supersede plan.md unit 1/4 here |  | 
+2026-11-25T19:42:14 | release | release | user approved 2026-11-25: engine built units 1-3; web units 4-5 and the fixes were built by hand (engine red run is pytest-only); release so x21 can be edited | 66c2af4d-540c-4552-bc41-afc64bb2f303 | 
+2026-11-25 | wf release of x20 | user approved (AskUserQuestion) | the hold blocked edits in the x21 worktree; x20 continues by hand |  | 
+2026-11-25 | expected_docs added to EvalCaseView (PR review 1) | design fix inside the task | the view model exists only on this unmerged branch; no existing contract changes |  | 
+## Dismissals
+2026-11-25T19:24:02 | u3 tests_decide | wrong | T4: The test already pins the error to the malformed entry by position and pins the order: line 377 requires errors exactly [False, False, True], so an error on the wrong entry, or a missing one, fails; lines 368-370 require body[0].id == 'A1' and body[1].mode == 'claim', so the file-name order a.yaml, b.yaml, c.yaml is checked. The finding's claim that it 'checks only that an error exists' is contradicted by the line itself.;     assert [e["error"] is not None for e in body] == [False, False, True] | tests/test_api.py:377 | verify
+2026-11-25 | commit review C5 on 47c2263 (S11 test dropped the Search must find check) | wrong | tests/test_eval_cases.py:182 assert v.must_find_docs == ["2307.03172v3"]; :184 now asserts the exact checks list |  | 
+2026-11-25 | principles P3 (create_app evals param) | overstated | additive keyword with default EVALS, listed in plan Contracts; no caller changes |  | 
+2026-11-25 | answers-ask A1,A2 (no screenshot commit) | overstated | plan unit 7 saves screenshots to the run folder shots/, not the repo |  | 
+2026-11-25 | answers-ask A4,A5 (S11 assertion) | overstated | C5 dismissal logged above with tests/test_eval_cases.py:182 |  | 
+2026-11-25 | commit review C4 on d38fe36 (single-abstract cases) | overstated | ask.md follow-up (user, verbatim): broader coverage and fewer brittle cases; multi-abstract was the rule for Q01-Q16 |  | 
+## Commits
+2026-11-25T19:18:36 | u1 commit_tests | commit | test(US-1): Case view model, statements mode, loader and malformed files | c91278c1d35f80cea038836c3ccd876715be937d | 
+2026-11-25T19:19:30 | u1 commit_fix | commit | US-1: Case view model, statements mode, loader and malformed files | ca8daf651e2ad22c5053302b55becccae2157546 | 
+2026-11-25T19:21:30 | u2 commit_tests | commit | test(US-1): Claim mode: documents, flags and human-readable security checks | b78553aae161b5343c4592f199ea23bece02c2ba | 
+2026-11-25T19:22:19 | u2 commit_fix | commit | US-1: Claim mode: documents, flags and human-readable security checks | f93af8f4c92889305ca834cb0171e3931d44f7ab | 
+2026-11-25T19:23:05 | u3 commit_tests | commit | test(US-1, US-4): `GET /api/evals`, `FC_EVALS` wiring and deploy docs | acadeae17c5b11740c726753248e0c4b59479e48 | 
+2026-11-25T19:24:11 | u3 commit_fix | commit | US-1, US-4: `GET /api/evals`, `FC_EVALS` wiring and deploy docs | 4bafd5aaf5ccef7c171d6bbf6b4f0a316f045862 | 
+2026-11-25 | commit review C5 on 47c2263 (S11 test dropped the Search must find check) | wrong | tests/test_eval_cases.py:182 assert v.must_find_docs == ["2307.03172v3"]; :184 now asserts the exact checks list |  | 
+2026-11-25 | answers-ask A1,A2 (no screenshot commit) | overstated | plan unit 7 saves screenshots to the run folder shots/, not the repo |  | 
+2026-11-25 | commit review C4 on d38fe36 (single-abstract cases) | overstated | ask.md follow-up (user, verbatim): broader coverage and fewer brittle cases; multi-abstract was the rule for Q01-Q16 |  | 
+2026-11-25T19:41:03 | review-commit-12 on 79b6ce4: C2/C4 FAIL (tests reverse the plan's statements-mode gold_doc_ids -> must_cite_docs mapping) | rejected: wrong | the plan mapping is what PR review 1 flagged (review-pr-1.md finding 1); gold_doc_ids are scored as aggregate recall at src/fact_checker/evals.py:94 and :107, not as required citations; the main session ordered the split into expected_docs (Step G/H), so the tests intentionally supersede plan.md unit 1/4 here |  | 
+## Ratchet candidates
+
+## Dropped findings
+
