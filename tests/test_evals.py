@@ -622,3 +622,11 @@ def test_quotes_verbatim_accepts_a_quote_that_matches_after_normalisation():
     checks = _by_name(score_claim_case(_claim_case(quotes_verbatim=True), outcome))
     assert checks["quotes_verbatim"].passed
 
+
+def test_eval_run_claims_redacts_a_leaked_secret_in_checks(tmp_path, monkeypatch):
+    monkeypatch.setattr("fact_checker.cli.real_clients", _leaking_clients, raising=False)
+    monkeypatch.setenv("FC_ACCESS_CODE", "letmein-CODE42")
+    cases, out = tmp_path / "cases", tmp_path / "out"
+    _write_claim_case(cases, forbid_secrets=True)
+    main(["eval", "run-claims", str(cases), str(out)])
+    assert "letmein-CODE42" not in (out / "C1" / "checks.json").read_text()
