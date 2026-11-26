@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { confirmClaim, confirmIssues, createClaim, getClaim, verifyClaim } from "../api";
 import { ResultView } from "../components/ResultView";
 import { StatementsTable } from "../components/StatementsTable";
@@ -30,7 +31,8 @@ function Progress({ status }: { status: string }): JSX.Element {
 }
 
 export function CheckPage({ pollMs = 2000 }: Props): JSX.Element {
-  const [claim, setClaim] = useState("");
+  const [searchParams] = useSearchParams();
+  const [claim, setClaim] = useState(() => searchParams.get("claim")?.slice(0, 500) ?? "");
   const [phase, setPhase] = useState<Phase>({ name: "entry" });
   const [rows, setRows] = useState<Row[]>([]);
   const [added, setAdded] = useState<AddedRow[]>([]);

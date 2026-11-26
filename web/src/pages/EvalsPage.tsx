@@ -76,6 +76,11 @@ function EvalCard({ evalCase }: { evalCase: EvalCase }): JSX.Element {
         </ul>
       )}
       {note !== null && <p className="callout info" data-testid="eval-note">{note}</p>}
+      {evalCase.claim !== null && (
+        <Link className="button-link" data-testid="eval-try" to={`/?claim=${encodeURIComponent(evalCase.claim)}`}>
+          Check this claim
+        </Link>
+      )}
       {evalCase.error !== null && <p className="issue" data-testid="eval-error">{evalCase.error}</p>}
     </li>
   );
