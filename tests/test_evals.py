@@ -17,6 +17,7 @@ from fact_checker.evals import (
     score_claim_case,
     score_runs,
 )
+from fact_checker.llm.base import LLMError
 from fact_checker.llm.fake import FakeClient
 
 CASES_DIR = Path(__file__).resolve().parents[1] / "evals" / "cases"
@@ -585,3 +586,30 @@ def test_eval_run_claims_runs_only_claim_cases_and_honours_case_filter(tmp_path,
     assert sorted(p.name for p in out_all.iterdir()) == ["C1", "C2"]
     main(["eval", "run-claims", str(cases), str(out_one), "--case", "C2"])
     assert sorted(p.name for p in out_one.iterdir()) == ["C2"]
+
+
+def _leaking_clients(*_):
+    leak = LLMError("provider said: letmein-CODE42 is not valid")
+    return Clients(FakeClient([leak]), FakeClient([]), FakeClient([]), FakeClient([]))
+
+
+def test_eval_run_claims_redacts_a_leaked_secret_in_outcome(tmp_path, monkeypatch):
+    monkeypatch.setattr("fact_checker.cli.real_clients", _leaking_clients, raising=False)
+    monkeypatch.setenv("FC_ACCESS_CODE", "letmein-CODE42")
+    cases, out = tmp_path / "cases", tmp_path / "out"
+    _write_claim_case(cases, forbid_secrets=True)
+    assert main(["eval", "run-claims", str(cases), str(out)]) == 1
+    outcome = (out / "C1" / "outcome.json").read_text()
+    assert "letmein-CODE42" not in outcome
+    assert "[redacted secret]" in outcome
+    checks = json.loads((out / "C1" / "checks.json").read_text())
+    assert not next(c for c in checks if c["name"] == "forbid_secrets")["passed"]
+
+
+def test_eval_run_claims_unknown_case_id_fails_without_running(tmp_path, monkeypatch, capsys):
+    monkeypatch.setattr("fact_checker.cli.real_clients", _two_run_clients, raising=False)
+    cases, out = tmp_path / "cases", tmp_path / "out"
+    _write_mixed_cases(cases)
+    assert main(["eval", "run-claims", str(cases), str(out), "--case", "C9"]) == 1
+    assert not out.exists() or not any(out.iterdir())
+    assert "C9" in capsys.readouterr().err
