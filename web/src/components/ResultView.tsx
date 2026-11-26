@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useId, useState } from "react";
 import { Link } from "react-router-dom";
 import type { CheckResult, FinalAnswer, FinalEvidence, FinalStatement, JudgeScores } from "../types";
 import { Badge } from "./Badge";
+import { LOAD_BEARING_TITLE, LoadBearingHint } from "./LoadBearingHint";
 
 function EvidenceQuote({ item }: { item: FinalEvidence }): JSX.Element {
   return (
@@ -18,13 +19,17 @@ function EvidenceQuote({ item }: { item: FinalEvidence }): JSX.Element {
   );
 }
 
-function StatementResult({ statement }: { statement: FinalStatement }): JSX.Element {
+function StatementResult({ statement, hintId }: { statement: FinalStatement; hintId: string }): JSX.Element {
   return (
     <section className="card statement-result">
       <header>
         <Badge kind={statement.verdict} testId="statement-verdict" />
         <span className="statement-text">{statement.text}</span>
-        {statement.load_bearing && <span className="tag">load-bearing</span>}
+        {statement.load_bearing && (
+          <span className="tag" title={LOAD_BEARING_TITLE} aria-describedby={hintId}>
+            load-bearing
+          </span>
+        )}
       </header>
       {statement.downgrade_reason !== null && (
         <p className="muted">
@@ -88,13 +93,15 @@ function ReviewPanel({ scores }: { scores: JudgeScores }): JSX.Element {
 }
 
 function Answer({ answer, scores }: { answer: FinalAnswer; scores: JudgeScores | null }): JSX.Element {
+  const hintId = useId();
   return (
     <>
       <p className="overall">
         <Badge kind={answer.overall.verdict} testId="result-overall" /> <span className="muted">rule {answer.overall.rule}</span>
       </p>
+      {answer.statements.some((statement) => statement.load_bearing) && <LoadBearingHint id={hintId} />}
       {answer.statements.map((statement) => (
-        <StatementResult key={statement.id} statement={statement} />
+        <StatementResult key={statement.id} statement={statement} hintId={hintId} />
       ))}
       {scores !== null && <ReviewPanel scores={scores} />}
     </>

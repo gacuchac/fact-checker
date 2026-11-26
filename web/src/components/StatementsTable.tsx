@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useId, useState } from "react";
 import type { AddedRow, Row } from "../edits";
 import type { ConfirmIssue } from "../types";
+import { LOAD_BEARING_TITLE, LoadBearingHint } from "./LoadBearingHint";
 
 interface Props {
   rows: Row[];
@@ -46,6 +47,7 @@ function TextCell({ text, onSave }: TextCellProps): JSX.Element {
 
 export function StatementsTable({ rows, added, issues, onRows, onAdded }: Props): JSX.Element {
   const [nextKey, setNextKey] = useState(1);
+  const hintId = useId();
   const known = new Set(rows.map((r) => r.statement.id));
   const keptCount = rows.filter((r) => !r.dropped).length + added.length;
   const full = keptCount >= MAX_STATEMENTS;
@@ -58,13 +60,14 @@ export function StatementsTable({ rows, added, issues, onRows, onAdded }: Props)
           Statement {issue.statement_id}: {issue.reason}
         </p>
       ))}
+      <LoadBearingHint id={hintId}> Untick the box to keep a statement checked without letting it decide.</LoadBearingHint>
       <table className="statements">
         <thead>
           <tr>
             <th>Id</th>
             <th>Statement</th>
             <th>Kind</th>
-            <th>Load-bearing</th>
+            <th title={LOAD_BEARING_TITLE}>Load-bearing</th>
             <th>Implied by</th>
             <th />
           </tr>
@@ -93,6 +96,7 @@ export function StatementsTable({ rows, added, issues, onRows, onAdded }: Props)
                   type="checkbox"
                   aria-label={`load-bearing ${row.statement.id}`}
                   data-testid="statement-load-bearing"
+                  aria-describedby={hintId}
                   checked={row.loadBearing}
                   disabled={row.dropped}
                   onChange={() => onRows(replaceAt(rows, index, { ...row, loadBearing: !row.loadBearing }))}
