@@ -190,6 +190,7 @@ export interface EvalCase {
   statements: EvalStatement[];
   must_cite_docs: string[];
   must_find_docs: string[];
+  expected_docs: string[];
   owasp: string[];
   checks: string[];
   budgets: Record<string, unknown>;

@@ -26,6 +26,7 @@ class EvalCaseView(BaseModel):
     statements: list[EvalStatementView] = []
     must_cite_docs: list[str] = []
     must_find_docs: list[str] = []
+    expected_docs: list[str] = []
     owasp: list[str] = []
     checks: list[str] = []
     budgets: dict[str, Any] = {}
@@ -49,7 +50,7 @@ def _statements_fields(factcheck: dict[str, Any]) -> dict[str, Any]:
             )
             for s in raw_statements
         ],
-        "must_cite_docs": [str(d) for d in factcheck.get("gold_doc_ids") or []],
+        "expected_docs": [str(d) for d in factcheck.get("gold_doc_ids") or []],
     }
 
 

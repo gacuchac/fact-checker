@@ -67,6 +67,7 @@ function EvalCard({ evalCase }: { evalCase: EvalCase }): JSX.Element {
       )}
       <DocRow label="Must cite" ids={evalCase.must_cite_docs} testId="eval-cite-doc" />
       <DocRow label="Must be found by search" ids={evalCase.must_find_docs} testId="eval-find-doc" />
+      <DocRow label="Expected sources" ids={evalCase.expected_docs} testId="eval-expected-doc" />
       {evalCase.mode === "statements" && evalCase.statements.length > 0 && (
         <ul>
           {evalCase.statements.map((statement) => (
