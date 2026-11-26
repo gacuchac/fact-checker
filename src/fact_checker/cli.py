@@ -250,11 +250,22 @@ def _eval_score(args: argparse.Namespace) -> int:
     return 0
 
 
+def _redact_values(text: str, secrets: list[str]) -> str:
+    for secret in secrets:
+        text = text.replace(secret, "[redacted secret]")
+    return text
+
+
 def _eval_run_claims(args: argparse.Namespace) -> int:
     settings = settings_from_environment()
     clients = real_clients(settings)
     secrets = [os.environ[name] for name in SECRET_ENV_VARS if os.environ.get(name)]
-    cases = [c for c in _load_cases(args.cases, "claim") if not args.case or c["id"] in args.case]
+    loaded = _load_cases(args.cases, "claim")
+    unknown = sorted(set(args.case or []) - {c["id"] for c in loaded})
+    if unknown:
+        print(f"no claim case with id: {', '.join(unknown)}", file=sys.stderr)
+        return 1
+    cases = [c for c in loaded if not args.case or c["id"] in args.case]
     all_passed = True
     for case in cases:
         work = args.out / case["id"]
@@ -265,7 +276,7 @@ def _eval_run_claims(args: argparse.Namespace) -> int:
         public = dataclasses.asdict(outcome)
         for private in ("secrets", "prompts"):
             del public[private]
-        (work / "outcome.json").write_text(json.dumps(public, indent=2))
+        (work / "outcome.json").write_text(_redact_values(json.dumps(public, indent=2), secrets))
         (work / "checks.json").write_text(json.dumps([dataclasses.asdict(c) for c in checks], indent=2))
         passed = all(c.passed for c in checks)
         all_passed = all_passed and passed
