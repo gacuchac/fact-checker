@@ -21,6 +21,7 @@ function evalCase(overrides: Partial<EvalCase>): EvalCase {
     statements: [],
     must_cite_docs: [],
     must_find_docs: [],
+    expected_docs: [],
     owasp: [],
     checks: [],
     budgets: {},
@@ -37,7 +38,7 @@ const statementsCase = evalCase({
   claim: "Long contexts are used well by language models",
   expected: ["supported"],
   statements: [{ text: "Models lose facts in the middle of long contexts", gold_verdict: "contradicted", load_bearing: true }],
-  must_cite_docs: ["2307.03172v3"],
+  expected_docs: ["2307.03172v3"],
 });
 
 const claimCase = evalCase({
@@ -91,7 +92,7 @@ it("renders a statements case and a claim case as cards", async () => {
   const statement = within(statements).getByTestId("eval-statement");
   expect(statement).toHaveTextContent("Models lose facts in the middle of long contexts");
   expect(within(statement).getByText("contradicted")).toBeInTheDocument();
-  expect(within(statements).getByTestId("eval-cite-doc")).toHaveAttribute("href", "/abstracts/2307.03172v3");
+  expect(within(statements).getByTestId("eval-expected-doc")).toHaveAttribute("href", "/abstracts/2307.03172v3");
 
   expect(within(claim).getByTestId("eval-category")).toHaveTextContent("Security");
   expect(texts(within(claim).getAllByTestId("eval-owasp"))).toEqual(["LLM01", "LLM02"]);
@@ -119,6 +120,18 @@ it("labels the documents to cite apart from the documents search must find", asy
   const findRow = screen.getByText("Must be found by search").parentElement as HTMLElement;
   expect(within(findRow).queryByText("b2")).toBeInTheDocument();
   expect(within(findRow).queryByText("a1")).not.toBeInTheDocument();
+});
+
+it("shows a statements case's gold docs as Expected sources, not as required citations", async () => {
+  renderPage(serve([statementsCase]));
+  await screen.findByTestId("eval-card");
+  const link = screen.getByTestId("eval-expected-doc");
+  expect(link).toHaveTextContent("2307.03172v3");
+  expect(link).toHaveAttribute("href", "/abstracts/2307.03172v3");
+  const row = screen.getByText("Expected sources").parentElement as HTMLElement;
+  expect(within(row).getByTestId("eval-expected-doc")).toBe(link);
+  expect(screen.queryByText("Must cite")).not.toBeInTheDocument();
+  expect(screen.queryByTestId("eval-cite-doc")).not.toBeInTheDocument();
 });
 
 it("notes a case that changes the proposed statements", async () => {

@@ -345,6 +345,7 @@ def _write_eval_cases(folder):
     (folder / "a.yaml").write_text(
         "id: A1\nmode: statements\nfactcheck:\n  claim: c\n  label: supported\n  statements:\n"
         "  - text: t\n    load_bearing: true\n    query: q\n    gold_verdict: supported\n"
+        "  gold_doc_ids: [g1]\n"
     )
     (folder / "b.yaml").write_text(
         "id: B1\nmode: claim\nfactcheck:\n  claim: some claim\n  edits: []\n"
@@ -367,6 +368,8 @@ def test_us1_evals_route_lists_every_case_in_file_order_with_errors(db, tmp_path
     body = response.json()
     assert len(body) == 3
     assert body[0]["id"] == "A1"
+    assert body[0]["expected_docs"] == ["g1"]
+    assert body[0]["must_cite_docs"] == []
     claim = body[1]
     assert claim["mode"] == "claim"
     assert claim["checks"]

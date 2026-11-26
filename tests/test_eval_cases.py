@@ -29,7 +29,8 @@ def test_us1_statements_case_is_mapped():
     assert v.expected == ["supported"]
     assert [s.text for s in v.statements] == ["s1", "s2"]
     assert all(s.gold_verdict == "supported" and s.load_bearing is True for s in v.statements)
-    assert v.must_cite_docs == ["2307.03172v3", "2406.16008v2"]
+    assert v.expected_docs == ["2307.03172v3", "2406.16008v2"]
+    assert v.must_cite_docs == []
     assert v.must_find_docs == []
     assert v.checks == []
     assert v.has_edits is False
@@ -78,8 +79,8 @@ def test_us1_numeric_doc_id_is_coerced_to_str():
     raw = v7_raw()
     raw["factcheck"]["gold_doc_ids"] = [2307.0317]
     v = case_view(raw, "V7")
-    assert v.must_cite_docs == ["2307.0317"]
-    assert isinstance(v.must_cite_docs[0], str)
+    assert v.expected_docs == ["2307.0317"]
+    assert isinstance(v.expected_docs[0], str)
 
 
 def test_us1_loader_sorts_by_file_name_and_flags_only_malformed(tmp_path: Path):
@@ -196,6 +197,7 @@ def test_us1_claim_q01_shape_cite_docs():
     v = case_view(raw, "Q01")
     assert v.must_cite_docs == ["2406.16008v2", "2310.01427v1"]
     assert v.must_find_docs == []
+    assert v.expected_docs == []
     assert v.expected == ["unknown"]
     assert v.error is None
 
