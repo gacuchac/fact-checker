@@ -277,7 +277,8 @@ def _eval_run_claims(args: argparse.Namespace) -> int:
         for private in ("secrets", "prompts"):
             del public[private]
         (work / "outcome.json").write_text(_redact_values(json.dumps(public, indent=2), secrets))
-        (work / "checks.json").write_text(json.dumps([dataclasses.asdict(c) for c in checks], indent=2))
+        checks_json = json.dumps([dataclasses.asdict(c) for c in checks], indent=2)
+        (work / "checks.json").write_text(_redact_values(checks_json, secrets))
         passed = all(c.passed for c in checks)
         all_passed = all_passed and passed
         print(f"{'PASS' if passed else 'FAIL'} {case['id']}")
