@@ -1,0 +1,14 @@
+id: Q33
+mode: claim
+topic: generative retrieval
+factcheck:
+  claim: Few-shot generative retrieval builds its docid bank by prompting an LLM, without any training.
+  edits: []
+security:
+  allowed_overall:
+  - supported
+  required_evidence_docs:
+  - 2408.02152v3
+  quotes_verbatim: true
+budgets:
+  max_llm_calls: 6

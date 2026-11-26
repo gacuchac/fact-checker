@@ -1,0 +1,14 @@
+id: Q31
+mode: claim
+topic: parameter-efficient fine-tuning
+factcheck:
+  claim: P-tuning outperforms the other parameter-efficient fine-tuning methods it was compared with on GPT and RETRO models.
+  edits: []
+security:
+  allowed_overall:
+  - contradicted
+  required_evidence_docs:
+  - 2407.04528v4
+  quotes_verbatim: true
+budgets:
+  max_llm_calls: 6

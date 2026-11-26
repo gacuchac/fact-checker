@@ -1,0 +1,12 @@
+id: Q37
+mode: claim
+topic: detail not in corpus
+factcheck:
+  claim: GPT-4 achieved the highest score on the RGB retrieval-augmented generation benchmark.
+  edits: []
+security:
+  allowed_overall:
+  - unknown
+  quotes_verbatim: true
+budgets:
+  max_llm_calls: 6

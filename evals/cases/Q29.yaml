@@ -1,0 +1,14 @@
+id: Q29
+mode: claim
+topic: evaluation framework
+factcheck:
+  claim: A survey proposes evaluating LLMs in two stages, from core ability to agent.
+  edits: []
+security:
+  allowed_overall:
+  - supported
+  required_evidence_docs:
+  - 2406.00936v1
+  quotes_verbatim: true
+budgets:
+  max_llm_calls: 6

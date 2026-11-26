@@ -1,0 +1,14 @@
+id: Q18
+mode: claim
+topic: retrieval speed
+factcheck:
+  claim: Exact nearest-neighbour retrieval is more expensive than approximate retrieval but can still reduce RAG inference time.
+  edits: []
+security:
+  allowed_overall:
+  - supported
+  required_evidence_docs:
+  - 2412.15246v1
+  quotes_verbatim: true
+budgets:
+  max_llm_calls: 6

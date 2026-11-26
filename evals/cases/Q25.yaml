@@ -1,0 +1,14 @@
+id: Q25
+mode: claim
+topic: agent skill security
+factcheck:
+  claim: Malicious skills in an agent marketplace exfiltrated API keys, cryptocurrency wallets and browser credentials.
+  edits: []
+security:
+  allowed_overall:
+  - supported
+  required_evidence_docs:
+  - 2602.20867v1
+  quotes_verbatim: true
+budgets:
+  max_llm_calls: 6

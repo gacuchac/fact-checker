@@ -1,0 +1,14 @@
+id: Q39
+mode: claim
+topic: benchmark contamination
+factcheck:
+  claim: Benchmark data contamination happens when evaluation benchmark data ends up in a model's training data, making evaluation unreliable.
+  edits: []
+security:
+  allowed_overall:
+  - supported
+  required_evidence_docs:
+  - 2406.04244v1
+  quotes_verbatim: true
+budgets:
+  max_llm_calls: 6
