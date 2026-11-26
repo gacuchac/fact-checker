@@ -1,0 +1,14 @@
+id: Q10
+mode: claim
+topic: agent architectures, robustness vs cost
+factcheck:
+  claim: ReAct agents are more robust than Reflexion under stress and also use fewer tool calls and tokens than other approaches.
+  edits: []
+security:
+  allowed_overall:
+  - contradicted
+  required_evidence_docs:
+  - 2603.19896v1
+  quotes_verbatim: true
+budgets:
+  max_llm_calls: 6

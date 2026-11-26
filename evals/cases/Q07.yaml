@@ -1,0 +1,12 @@
+id: Q07
+mode: claim
+topic: self-preference bias in judges
+factcheck:
+  claim: Self-preference bias in LLM judges is a robust effect that holds up once experimental confounds are controlled.
+  edits: []
+security:
+  allowed_overall:
+  - unknown
+  quotes_verbatim: true
+budgets:
+  max_llm_calls: 6

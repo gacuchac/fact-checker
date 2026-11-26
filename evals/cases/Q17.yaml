@@ -1,0 +1,15 @@
+id: Q17
+mode: claim
+topic: corrective and conflict-aware RAG
+factcheck:
+  claim: CRAG uses a retrieval evaluator's confidence to choose among retrieval actions, and CARE trains a context assessor to recognise unreliable retrieved context.
+  edits: []
+security:
+  allowed_overall:
+  - supported
+  required_evidence_docs:
+  - 2401.15884v3
+  - 2508.15253v2
+  quotes_verbatim: true
+budgets:
+  max_llm_calls: 6

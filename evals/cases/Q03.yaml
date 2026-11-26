@@ -1,0 +1,11 @@
+id: Q03
+mode: claim
+topic: retrieval vs long context windows
+factcheck:
+  claim: "Retrieval improves LLMs even when their context window is extended, and only a handful of recent models keep consistent accuracy above 64k tokens."
+  edits: []
+security:
+  allowed_overall: [supported]
+  required_evidence_docs: [2310.03025v2, 2411.03538v1]
+  quotes_verbatim: true
+budgets: {max_llm_calls: 6}

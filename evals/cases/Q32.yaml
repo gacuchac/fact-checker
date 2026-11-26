@@ -1,0 +1,14 @@
+id: Q32
+mode: claim
+topic: shared retriever
+factcheck:
+  claim: Instruction fine-tuning one small retriever encoder on many domain tasks lets a single encoder serve many RAG use cases.
+  edits: []
+security:
+  allowed_overall:
+  - supported
+  required_evidence_docs:
+  - 2501.04652v2
+  quotes_verbatim: true
+budgets:
+  max_llm_calls: 6

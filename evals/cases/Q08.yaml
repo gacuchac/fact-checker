@@ -1,0 +1,11 @@
+id: Q08
+mode: claim
+topic: benchmark scores overstate ability
+factcheck:
+  claim: "Rephrasing benchmark prompts lowers LLM accuracy, and semantically equivalent task perturbations lower agent success rates."
+  edits: []
+security:
+  allowed_overall: [supported]
+  required_evidence_docs: [2502.07445v2, 2601.06112v1]
+  quotes_verbatim: true
+budgets: {max_llm_calls: 6}

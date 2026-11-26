@@ -1,0 +1,14 @@
+id: Q22
+mode: claim
+topic: medical RAG scaling
+factcheck:
+  claim: Medical RAG shows a log-linear scaling property and a lost-in-the-middle effect.
+  edits: []
+security:
+  allowed_overall:
+  - supported
+  required_evidence_docs:
+  - 2402.13178v2
+  quotes_verbatim: true
+budgets:
+  max_llm_calls: 6
