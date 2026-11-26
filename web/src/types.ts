@@ -175,3 +175,25 @@ export interface Doc extends DocSummary {
   base_id: string;
   abstract: string;
 }
+
+export interface EvalStatement {
+  text: string;
+  gold_verdict: string;
+  load_bearing: boolean;
+}
+
+export interface EvalCase {
+  id: string;
+  mode: string;
+  claim: string | null;
+  expected: string[];
+  statements: EvalStatement[];
+  must_cite_docs: string[];
+  must_find_docs: string[];
+  owasp: string[];
+  checks: string[];
+  budgets: Record<string, unknown>;
+  has_edits: boolean;
+  has_planted_docs: boolean;
+  error: string | null;
+}

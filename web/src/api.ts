@@ -5,6 +5,7 @@ import type {
   Doc,
   DocSummary,
   Edit,
+  EvalCase,
   ProposedClaim,
   RunSummary,
   Trace,
@@ -143,6 +144,11 @@ export function searchDocs(q: string, limit = 20): Promise<DocSummary[]> {
 
 export function getDoc(docId: string): Promise<Doc> {
   return request(`/api/docs/${encodeURIComponent(docId)}`);
+}
+
+/** List every eval case file as one normalized view each, in case id order. */
+export function listEvals(): Promise<EvalCase[]> {
+  return request("/api/evals");
 }
 
 export function confirmIssues(error: unknown): ConfirmIssue[] | null {
