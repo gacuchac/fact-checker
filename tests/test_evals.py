@@ -613,3 +613,12 @@ def test_eval_run_claims_unknown_case_id_fails_without_running(tmp_path, monkeyp
     assert main(["eval", "run-claims", str(cases), str(out), "--case", "C9"]) == 1
     assert not out.exists() or not any(out.iterdir())
     assert "C9" in capsys.readouterr().err
+
+
+def test_quotes_verbatim_accepts_a_quote_that_matches_after_normalisation():
+    abstract = "We find that Performance   is often HIGHEST when relevant information occurs at the beginning."
+    quote = "performance is often highest when relevant information occurs"
+    outcome = _outcome(_final("supported", [_kept_quote("d1", quote)]), abstracts={"d1": abstract})
+    checks = _by_name(score_claim_case(_claim_case(quotes_verbatim=True), outcome))
+    assert checks["quotes_verbatim"].passed
+
