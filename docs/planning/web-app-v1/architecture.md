@@ -84,6 +84,7 @@ Goal: a light local web app. You type a claim, review and approve the statements
 | `GET /api/claims/{id}` | status (`proposed`, `confirmed`, `verifying`, `done`, `failed`), the final answer, the scores, `needs_attention` and the events |
 | `GET /api/docs?q=` and `GET /api/docs/{doc_id}` | browse and search the abstracts database |
 | `GET /api/runs` and `GET /api/runs/{id}/trace` | list the runs; return one run's spans in order, for the traces page |
+| `GET /api/evals` | list the eval cases in `FC_EVALS` (default `evals/cases`), malformed files with `error`, for the evals page |
 
 No user accounts. Every `/api/*` route except `/api/health` requires the header `X-Access-Code`, which must equal env `FC_ACCESS_CODE`. If `FC_ACCESS_CODE` is unset, the check is off, which suits local development. A per-client rate limit and env `FC_DAILY_RUN_CAP` (the number of claims started per day, all statuses; `POST /api/claims` returns 429 at the cap) protect the API credit. The client key is the value of the header named by env `FC_CLIENT_IP_HEADER` (for example `X-Real-IP` on Railway) when it is set and present, else the peer address. Wrong access codes are throttled: after 10 in a minute from one client, every request from it gets 429, even with the right code. In production, FastAPI serves the built React app from `web/dist` on the same origin. CORS is allowed only for the Vite dev origin. Edited and added statement text is limited to 500 characters (422), and a run accepts at most 3 confirm rounds (409).
 
@@ -97,6 +98,7 @@ No user accounts. Every `/api/*` route except `/api/health` requires the header 
   6. The review scores, with a **needs attention** panel showing Sol's reasoning and, when the answer was revised, the first and the revised verdicts side by side.
 - **Traces page:** the list of runs. Each run opens a timeline of its spans (kind, name, model, latency, tokens), and every span expands to show its full input and output.
 - **Abstracts page:** search the database and open a paper.
+- **Evals page:** list the eval cases from `GET /api/evals` and open one.
 
 ## PRs into dev (modular, one commit each, `pr` review only)
 | PR | Scope | Depends on |

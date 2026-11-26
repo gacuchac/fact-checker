@@ -110,7 +110,7 @@ There is a web version that calls the models directly. You approve the statement
 - `finalize`, with its quote checks;
 - the final message.
 
-The **Traces** page shows each run as a timeline you can expand. The **Abstracts** page lets you browse and search the 48 papers.
+The **Traces** page shows each run as a timeline you can expand. The **Abstracts** page lets you browse and search the 48 papers. The **Evals** page lists the eval cases.
 
 ### Run it locally
 ```bash
@@ -126,7 +126,7 @@ Settings are environment variables (see `.env.example`):
 - `FC_ACCESS_CODE`: when set, the app asks for it;
 - `FC_DAILY_RUN_CAP`: how many claims can be started per day;
 - `FC_CLIENT_IP_HEADER`: the header that holds the client IP, used for the rate limit and the wrong-code throttle; set `FC_CLIENT_IP_HEADER=X-Real-IP` on Railway (its edge sets X-Real-IP) and leave it unset when the app is reached directly;
-- `FC_DB`, `FC_WEB_DIST` and `FC_CORPUS`: file paths.
+- `FC_DB`, `FC_WEB_DIST`, `FC_CORPUS` and `FC_EVALS`: file paths.
 
 ### Deployment
 One Railway service runs `uvicorn` with `fact_checker.api.app:create_app_from_env`. It serves both the API and the built React app. Railway no longer lets new services use `railway.json`, so the build and start settings live on the service:
@@ -137,7 +137,7 @@ One Railway service runs `uvicorn` with `fact_checker.api.app:create_app_from_en
 | Build command | `python -m venv /app/pyenv && /app/pyenv/bin/pip install --no-cache-dir . && cd web && npm ci && npm run build` (a custom build command replaces Railpack's own Python install, so the package goes into a venv here; not `.venv`, which Railpack leaves out of the image by default) |
 | Start command | `/app/pyenv/bin/uvicorn --factory fact_checker.api.app:create_app_from_env --host 0.0.0.0 --port 8080` (with `PORT=8080`) |
 | Healthcheck | `/api/health` |
-| Variables | `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `FC_ACCESS_CODE`, `FC_DAILY_RUN_CAP`, `FC_CLIENT_IP_HEADER=X-Real-IP` (Railway's edge sets X-Real-IP; leave unset when the app is reached directly), the model names, `FC_DB=/data/factcheck.sqlite`, `FC_WEB_DIST=/app/web/dist`, `FC_CORPUS=/app/data/corpus.json` |
+| Variables | `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `FC_ACCESS_CODE`, `FC_DAILY_RUN_CAP`, `FC_CLIENT_IP_HEADER=X-Real-IP` (Railway's edge sets X-Real-IP; leave unset when the app is reached directly), the model names, `FC_DB=/data/factcheck.sqlite`, `FC_WEB_DIST=/app/web/dist`, `FC_CORPUS=/app/data/corpus.json`, `FC_EVALS=/app/evals/cases` |
 
 - **Deploys:** every push to `dev` runs `.github/workflows/deploy.yml`, which uploads the checkout with `railway up --ci --service web` and fails if the Railway build fails. It authenticates with a Railway project token for the `production` environment, stored as the `RAILWAY_TOKEN` secret of the `fact-checker / production` GitHub environment (the one Railway's GitHub integration created). The service's own GitHub autodeploy is off: Railway holds pushes from a GitHub user who isn't in the Railway workspace (the bot) for manual approval. To redeploy by hand, run the workflow from the Actions tab.
 - **Database:** on a Railway volume at `/data`, so runs and traces survive redeploys.

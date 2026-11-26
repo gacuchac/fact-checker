@@ -24,6 +24,7 @@ from .security import WRONG_CODES_PER_WINDOW, RateLimiter
 ROOT = Path(__file__).resolve().parents[3]
 CORPUS = ROOT / "data" / "corpus.json"
 DEFAULT_DB = ROOT / "data" / "factcheck.sqlite"
+EVALS = ROOT / "evals" / "cases"
 WEB_DIST = ROOT / "web" / "dist"
 DEV_ORIGIN = "http://localhost:5173"
 
@@ -68,11 +69,13 @@ def create_app(
     make_clients: Callable[[Settings], Clients] = real_clients,
     static_dir: Path | None = None,
     corpus: Path = CORPUS,
+    evals: Path = EVALS,
 ) -> FastAPI:
     """Build the API app over the database db with the models from make_clients.
 
     All state (settings, db, clients, rate-limit buckets) lives on app.state. On startup the run store is
-    created and, if the docs table is missing or empty, built from corpus (default data/corpus.json). When static_dir exists
+    created and, if the docs table is missing or empty, built from corpus (default data/corpus.json).
+    evals is the folder of eval case files served by GET /api/evals (default evals/cases). When static_dir exists
     its files are served with a fallback to index.html for GET paths outside /api. CORS allows only the
     Vite dev origin.
     """
@@ -85,6 +88,7 @@ def create_app(
     app = FastAPI(title="fact-checker", lifespan=lifespan)
     app.state.settings = settings
     app.state.db = db
+    app.state.evals = evals
     app.state.clients = make_clients(settings)
     app.state.rate_limiter = RateLimiter()
     app.state.code_failures = RateLimiter(limit=WRONG_CODES_PER_WINDOW)
@@ -97,14 +101,15 @@ def create_app(
 
 
 def create_app_from_env() -> FastAPI:
-    """Build the app from the environment: settings from env and .env; paths from FC_DB, FC_WEB_DIST and FC_CORPUS.
+    """Build the app from the environment: settings from env and .env; paths from FC_DB, FC_WEB_DIST, FC_CORPUS and FC_EVALS.
 
-    The defaults are data/factcheck.sqlite, web/dist (served only when it exists) and data/corpus.json in the
-    source checkout; a deployment sets the variables when the package is installed elsewhere.
+    The defaults are data/factcheck.sqlite, web/dist (served only when it exists), data/corpus.json
+    and evals/cases in the source checkout; a deployment sets the variables when the package is installed elsewhere.
     """
     settings = settings_from_environment()
     db = Path(os.environ.get("FC_DB", DEFAULT_DB))
     web_dist = Path(os.environ.get("FC_WEB_DIST", WEB_DIST))
     corpus = Path(os.environ.get("FC_CORPUS", CORPUS))
+    evals = Path(os.environ.get("FC_EVALS", EVALS))
     static_dir = web_dist if web_dist.is_dir() else None
-    return create_app(settings, db, static_dir=static_dir, corpus=corpus)
+    return create_app(settings, db, static_dir=static_dir, corpus=corpus, evals=evals)
