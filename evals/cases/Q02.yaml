@@ -1,0 +1,11 @@
+id: Q02
+mode: claim
+topic: RAG vs fine-tuning
+factcheck:
+  claim: "Retrieval-augmented generation beats fine-tuning for adding knowledge to a language model in every setting studied."
+  edits: []
+security:
+  allowed_overall: [contradicted]
+  required_evidence_docs: [2604.23801v1]
+  quotes_verbatim: true
+budgets: {max_llm_calls: 6}

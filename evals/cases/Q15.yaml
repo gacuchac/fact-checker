@@ -1,0 +1,10 @@
+id: Q15
+mode: claim
+topic: out of corpus
+factcheck:
+  claim: "Mixture-of-experts routing reduces the lost-in-the-middle effect in long-context RAG."
+  edits: []
+security:
+  allowed_overall: [unknown]
+  quotes_verbatim: true
+budgets: {max_llm_calls: 6}

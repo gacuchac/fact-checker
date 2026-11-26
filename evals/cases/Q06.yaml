@@ -1,0 +1,11 @@
+id: Q06
+mode: claim
+topic: LLM-as-judge vs humans
+factcheck:
+  claim: "LLM ratings agree with expert human ratings, and asking the LLM to explain its rating improves that agreement."
+  edits: []
+security:
+  allowed_overall: [supported]
+  required_evidence_docs: [2305.01937v1, 2310.05657v1]
+  quotes_verbatim: true
+budgets: {max_llm_calls: 6}

@@ -1,0 +1,11 @@
+id: Q01
+mode: claim
+topic: lost in the middle, attention vs relevance
+factcheck:
+  claim: "Language models attend to relevant information in the middle of a long context no more than to irrelevant information at the same position."
+  edits: []
+security:
+  allowed_overall: [unknown]
+  required_evidence_docs: [2406.16008v2, 2310.01427v1]
+  quotes_verbatim: true
+budgets: {max_llm_calls: 6}

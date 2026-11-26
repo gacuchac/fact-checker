@@ -1,0 +1,11 @@
+id: Q11
+mode: claim
+topic: fine-tuning the RAG pipeline
+factcheck:
+  claim: "Independent, joint and two-phase fine-tuning of a RAG pipeline give about equal EM and F1 gains at different computational costs, and a dense retriever is bounded by its pre-trained model's internal knowledge."
+  edits: []
+security:
+  allowed_overall: [supported]
+  required_evidence_docs: [2510.01600v2, 2402.11035v3]
+  quotes_verbatim: true
+budgets: {max_llm_calls: 6}

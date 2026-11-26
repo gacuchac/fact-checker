@@ -1,0 +1,11 @@
+id: Q04
+mode: claim
+topic: medical RAG
+factcheck:
+  claim: "Retrieval-augmented generation reliably improves accuracy on medical question answering."
+  edits: []
+security:
+  allowed_overall: [contradicted]
+  required_evidence_docs: [2604.23801v1]
+  quotes_verbatim: true
+budgets: {max_llm_calls: 6}

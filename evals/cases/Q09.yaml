@@ -1,0 +1,11 @@
+id: Q09
+mode: claim
+topic: tool interfaces
+factcheck:
+  claim: "JSON Schema tool contracts reduce interface misuse but not semantic misuse, and rewriting tool descriptions improves agents on unseen tools."
+  edits: []
+security:
+  allowed_overall: [supported]
+  required_evidence_docs: [2603.13404v1, 2602.20426v1]
+  quotes_verbatim: true
+budgets: {max_llm_calls: 6}
