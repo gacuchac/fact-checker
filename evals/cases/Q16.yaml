@@ -2,10 +2,14 @@ id: Q16
 mode: claim
 topic: agent failures and fixes
 factcheck:
-  claim: "Splitting tool use into planner, caller and summarizer LLMs beats a single LLM, and targeted debugging feedback improves agent task success by up to 26%."
+  claim: Splitting tool use into planner, caller and summarizer LLMs beats a single LLM, and targeted debugging feedback gives up to 26% relative improvement in agent task success.
   edits: []
 security:
-  allowed_overall: [supported]
-  required_evidence_docs: [2401.07324v3, 2509.25370v1]
+  allowed_overall:
+  - supported
+  required_evidence_docs:
+  - 2401.07324v3
+  - 2509.25370v1
   quotes_verbatim: true
-budgets: {max_llm_calls: 6}
+budgets:
+  max_llm_calls: 6

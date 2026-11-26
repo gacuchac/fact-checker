@@ -2,10 +2,11 @@ id: Q14
 mode: claim
 topic: evaluation robustness
 factcheck:
-  claim: "Larger LLMs are less sensitive to rephrased benchmark prompts, and benchmark data contamination does not affect evaluation reliability."
+  claim: Larger LLMs are less sensitive to rephrased benchmark prompts, and benchmark data contamination does not affect evaluation reliability.
   edits: []
 security:
-  allowed_overall: [contradicted]
-  required_evidence_docs: [2502.07445v2, 2406.04244v1]
+  allowed_overall:
+  - contradicted
   quotes_verbatim: true
-budgets: {max_llm_calls: 6}
+budgets:
+  max_llm_calls: 6
