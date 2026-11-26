@@ -63,8 +63,20 @@ function serve(cases: EvalCase[]): Handler {
   return (url) => (url === "/api/evals" ? { body: cases } : undefined);
 }
 
+const questionCase = evalCase({
+  id: "Q01",
+  mode: "claim",
+  claim: "Models use the middle of long contexts as well as the ends",
+  expected: ["contradicted"],
+  must_cite_docs: ["2307.03172v3"],
+});
+
 function texts(elements: HTMLElement[]): string[] {
   return elements.map((element) => element.textContent ?? "");
+}
+
+function cardIds(): string[] {
+  return screen.getAllByTestId("eval-card").map((card) => within(card).getByRole("heading", { level: 3 }).textContent ?? "");
 }
 
 it("renders a statements case and a claim case as cards", async () => {
@@ -74,14 +86,14 @@ it("renders a statements case and a claim case as cards", async () => {
   expect(calls.map((call) => `${call.method} ${call.url}`)).toContain("GET /api/evals");
 
   const [statements, claim] = cards as [HTMLElement, HTMLElement];
-  expect(within(statements).getByTestId("eval-mode")).toHaveTextContent("statements");
+  expect(within(statements).getByTestId("eval-category")).toHaveTextContent("Fact-check");
   expect(texts(within(statements).getAllByTestId("eval-expected"))).toEqual(["supported"]);
   const statement = within(statements).getByTestId("eval-statement");
   expect(statement).toHaveTextContent("Models lose facts in the middle of long contexts");
   expect(within(statement).getByText("contradicted")).toBeInTheDocument();
   expect(within(statements).getByTestId("eval-cite-doc")).toHaveAttribute("href", "/abstracts/2307.03172v3");
 
-  expect(within(claim).getByTestId("eval-mode")).toHaveTextContent("claim");
+  expect(within(claim).getByTestId("eval-category")).toHaveTextContent("Security");
   expect(texts(within(claim).getAllByTestId("eval-owasp"))).toEqual(["LLM01", "LLM02"]);
   expect(texts(within(claim).getAllByTestId("eval-expected"))).toEqual(["unknown", "contradicted"]);
   expect(texts(within(claim).getAllByTestId("eval-security-check"))).toEqual([
@@ -130,12 +142,20 @@ it("shows no note when a case neither changes statements nor plants abstracts", 
   expect(screen.queryByTestId("eval-note")).not.toBeInTheDocument();
 });
 
-it("filters the cards by mode", async () => {
-  renderPage(serve([statementsCase, claimCase]));
-  expect(await screen.findAllByTestId("eval-card")).toHaveLength(2);
+it("labels a claim-mode case without OWASP tags as Fact-check and one with tags as Security", async () => {
+  renderPage(serve([questionCase, claimCase]));
+  const [question, security] = (await screen.findAllByTestId("eval-card")) as [HTMLElement, HTMLElement];
+  expect(within(question).getByTestId("eval-category")).toHaveTextContent("Fact-check");
+  expect(within(security).getByTestId("eval-category")).toHaveTextContent("Security");
+  expect(screen.queryByTestId("eval-mode")).not.toBeInTheDocument();
+});
+
+it("filters the cards by category: OWASP-tagged cases are Security, the rest Fact-check", async () => {
+  renderPage(serve([statementsCase, claimCase, questionCase]));
+  expect(await screen.findAllByTestId("eval-card")).toHaveLength(3);
   const all = screen.getByTestId("eval-filter-all");
-  const factCheck = screen.getByTestId("eval-filter-statements");
-  const security = screen.getByTestId("eval-filter-claim");
+  const factCheck = screen.getByTestId("eval-filter-factcheck");
+  const security = screen.getByTestId("eval-filter-security");
   expect(all).toHaveTextContent("All");
   expect(factCheck).toHaveTextContent("Fact-check");
   expect(security).toHaveTextContent("Security");
@@ -144,15 +164,15 @@ it("filters the cards by mode", async () => {
   await userEvent.click(security);
   expect(security).toHaveAttribute("aria-pressed", "true");
   expect(all).toHaveAttribute("aria-pressed", "false");
-  expect(texts(screen.getAllByTestId("eval-mode"))).toEqual(["claim"]);
+  expect(cardIds()).toEqual(["S01"]);
 
   await userEvent.click(factCheck);
   expect(factCheck).toHaveAttribute("aria-pressed", "true");
-  expect(texts(screen.getAllByTestId("eval-mode"))).toEqual(["statements"]);
+  expect(cardIds()).toEqual(["V1", "Q01"]);
 
   await userEvent.click(all);
   expect(all).toHaveAttribute("aria-pressed", "true");
-  expect(screen.getAllByTestId("eval-card")).toHaveLength(2);
+  expect(cardIds()).toEqual(["V1", "S01", "Q01"]);
 });
 
 it("says so when there are no eval cases", async () => {
