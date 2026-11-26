@@ -19,6 +19,7 @@ class Settings(BaseModel):
     review_model: str = "gpt-6-sol"
     access_code: str | None = None
     daily_run_cap: int = 50
+    client_ip_header: str | None = None
 
 
 _ENV_NAMES = {
@@ -31,6 +32,7 @@ _ENV_NAMES = {
     "review_model": "FC_REVIEW_MODEL",
     "access_code": "FC_ACCESS_CODE",
     "daily_run_cap": "FC_DAILY_RUN_CAP",
+    "client_ip_header": "FC_CLIENT_IP_HEADER",
 }
 
 

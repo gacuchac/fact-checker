@@ -1,0 +1,7 @@
+<!-- pass: commit | model: gpt-6-luna | base: commit c8d3d54ae581ade237975eea965ebdaa0d02894e | exit: 0 | 2026-11-25 19:09:45 -->
+VERDICT: CHANGES
+C1: FAIL — The subject names two distinct goals; commit message: `test(US-8): quotes_verbatim matches after N4 normalisation; checks.json is redacted`
+C2: PASS — The added tests specify normalized quote matching and secret redaction in `checks.json` as planned in US-8 ([tests/test_evals.py](/private/var/folders/j6/q0mz0r8j0zv1_8w69zdsnx8h0000gn/T/tmpb4g8e9cc/tree/tests/test_evals.py:617)).
+C3: PASS — The diff only adds tests for the two behaviors named in the message ([tests/test_evals.py](/private/var/folders/j6/q0mz0r8j0zv1_8w69zdsnx8h0000gn/T/tmpb4g8e9cc/tree/tests/test_evals.py:617)).
+C4: PASS — Both tests cover claim-case scoring and output redaction, advancing the planned eval work ([tests/test_evals.py](/private/var/folders/j6/q0mz0r8j0zv1_8w69zdsnx8h0000gn/T/tmpb4g8e9cc/tree/tests/test_evals.py:617)).
+C5: PASS — Neither test hard-codes an expected model result, special-cases a test input, or removes or weakens a test ([tests/test_evals.py](/private/var/folders/j6/q0mz0r8j0zv1_8w69zdsnx8h0000gn/T/tmpb4g8e9cc/tree/tests/test_evals.py:617)).

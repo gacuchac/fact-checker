@@ -4,7 +4,9 @@ import argparse
 import dataclasses
 import hashlib
 import json
+import os
 import sys
+import tempfile
 import time
 from pathlib import Path
 
@@ -13,6 +15,7 @@ import yaml
 from pydantic import ValidationError
 
 from fact_checker import corpus
+from fact_checker.api.app import real_clients
 from fact_checker.contracts import (
     SCHEMAS,
     ConfirmedStatements,
@@ -20,15 +23,23 @@ from fact_checker.contracts import (
     JudgeScores,
     Verdicts,
 )
-from fact_checker.evals import EvalReport, case_to_confirmed, score_runs
+from fact_checker.eval_runner import run_claim_case
+from fact_checker.evals import (
+    EvalReport,
+    case_to_confirmed,
+    score_claim_case,
+    score_runs,
+)
 from fact_checker.finalize import _finalize_with_results
 from fact_checker.index import build_index
 from fact_checker.judge import judge
+from fact_checker.llm.config import settings_from_environment
 from fact_checker.report import render_answer, run_files
 from fact_checker.retrieve import retrieve
 from fact_checker.store import init_store
 
-DATA_DIR = Path(__file__).resolve().parents[2] / "data"
+ROOT = Path(__file__).resolve().parents[2]
+DATA_DIR = ROOT / "data"
 DEFAULT_CORPUS = DATA_DIR / "corpus.json"
 DEFAULT_DB = DATA_DIR / "factcheck.sqlite"
 
@@ -197,12 +208,16 @@ STALE_CASE_FILES = (
 )
 
 
-def _load_cases(cases_dir: Path) -> list[dict]:
-    return [yaml.safe_load(path.read_text()) for path in sorted(cases_dir.glob("*.yaml"))]
+SECRET_ENV_VARS = ("ANTHROPIC_API_KEY", "OPENAI_API_KEY", "FC_ACCESS_CODE", "RAILWAY_TOKEN")
+
+
+def _load_cases(cases_dir: Path, mode: str) -> list[dict]:
+    cases = (yaml.safe_load(path.read_text()) for path in sorted(cases_dir.glob("*.yaml")))
+    return [case for case in cases if case.get("mode") == mode]
 
 
 def _eval_prepare(args: argparse.Namespace) -> int:
-    for case in _load_cases(args.cases):
+    for case in _load_cases(args.cases, "statements"):
         run = args.out / case["id"]
         run.mkdir(parents=True, exist_ok=True)
         for name in STALE_CASE_FILES:
@@ -227,12 +242,47 @@ def _report_table(report: EvalReport) -> str:
 
 
 def _eval_score(args: argparse.Namespace) -> int:
-    cases = _load_cases(args.cases)
+    cases = _load_cases(args.cases, "statements")
     finals = {c["id"]: _load_final(args.out / c["id"] / "final.json") for c in cases}
     report = score_runs(cases, finals)
     print(json.dumps(dataclasses.asdict(report), indent=2))
     print(_report_table(report))
     return 0
+
+
+def _redact_values(text: str, secrets: list[str]) -> str:
+    for secret in secrets:
+        text = text.replace(secret, "[redacted secret]")
+    return text
+
+
+def _eval_run_claims(args: argparse.Namespace) -> int:
+    settings = settings_from_environment()
+    clients = real_clients(settings)
+    secrets = [os.environ[name] for name in SECRET_ENV_VARS if os.environ.get(name)]
+    loaded = _load_cases(args.cases, "claim")
+    unknown = sorted(set(args.case or []) - {c["id"] for c in loaded})
+    if unknown:
+        print(f"no claim case with id: {', '.join(unknown)}", file=sys.stderr)
+        return 1
+    cases = [c for c in loaded if not args.case or c["id"] in args.case]
+    all_passed = True
+    for case in cases:
+        work = args.out / case["id"]
+        work.mkdir(parents=True, exist_ok=True)
+        with tempfile.TemporaryDirectory() as scratch:
+            outcome = run_claim_case(case, ROOT, clients, settings, secrets, Path(scratch))
+        checks = score_claim_case(case, outcome)
+        public = dataclasses.asdict(outcome)
+        for private in ("secrets", "prompts"):
+            del public[private]
+        (work / "outcome.json").write_text(_redact_values(json.dumps(public, indent=2), secrets))
+        checks_json = json.dumps([dataclasses.asdict(c) for c in checks], indent=2)
+        (work / "checks.json").write_text(_redact_values(checks_json, secrets))
+        passed = all(c.passed for c in checks)
+        all_passed = all_passed and passed
+        print(f"{'PASS' if passed else 'FAIL'} {case['id']}")
+    return 0 if all_passed else 1
 
 
 def _serve(args: argparse.Namespace) -> int:
@@ -296,7 +346,12 @@ def _parser() -> argparse.ArgumentParser:
     serve.add_argument("--port", type=int, default=8000)
     serve.set_defaults(handler=_serve)
 
-    evaluate = sub.add_parser("eval", help="prepare and score the seed eval cases")
+    _add_eval_parsers(sub)
+    return parser
+
+
+def _add_eval_parsers(sub: "argparse._SubParsersAction") -> None:
+    evaluate = sub.add_parser("eval", help="prepare, score and run the eval cases")
     eval_sub = evaluate.add_subparsers(dest="eval_command", required=True)
     for name, handler, help_text in (
         ("prepare", _eval_prepare, "write one confirmed.json per case"),
@@ -306,7 +361,11 @@ def _parser() -> argparse.ArgumentParser:
         step.add_argument("cases", type=Path)
         step.add_argument("out", type=Path)
         step.set_defaults(handler=handler)
-    return parser
+    run_claims = eval_sub.add_parser("run-claims", help="run the claim-mode cases against the real models")
+    run_claims.add_argument("cases", type=Path)
+    run_claims.add_argument("out", type=Path)
+    run_claims.add_argument("--case", action="append", default=[])
+    run_claims.set_defaults(handler=_eval_run_claims)
 
 
 def main(argv: list[str] | None = None) -> int:

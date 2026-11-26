@@ -67,6 +67,16 @@ describe("Check page", () => {
     expect(calls.some((c) => c.url === "/api/claims/r1/verify" && c.method === "POST")).toBe(true);
   });
 
+  it("limits the edit input and the added-statement input to 500 characters", async () => {
+    setup(() => undefined);
+    await breakDown();
+    const row = screen.getAllByTestId("statement-row")[0]!;
+    await userEvent.click(within(row).getByTestId("statement-edit"));
+    expect(within(row).getByTestId("statement-edit-input")).toHaveAttribute("maxlength", "500");
+    await userEvent.click(screen.getByTestId("add-statement"));
+    expect(screen.getByTestId("added-input")).toHaveAttribute("maxlength", "500");
+  });
+
   it("sends edit, flip and add edits", async () => {
     const calls = setup((url) => (url.endsWith("/confirm") ? { status: 422, body: { issues: [] } } : undefined));
     await breakDown();

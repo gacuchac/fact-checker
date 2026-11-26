@@ -208,30 +208,26 @@ def test_verify_failure_shows_as_failed_claim(db):
     assert run["status"] == "failed" and "api down" in run["error"] and run["result"] is None
 
 
-def test_daily_cap_blocks_verify(db):
-    clients = fake_clients(
-        [decompose_output(), decompose_output()], [], [v6_output()], [review_output()]
-    )
+def test_daily_cap_blocks_new_claims(db):
+    clients = fake_clients([decompose_output(), decompose_output()])
     with make_client(db, settings(daily_run_cap=1), clients) as client:
-        first = propose(client)["run_id"]
-        client.post(f"/api/claims/{first}/confirm", json={"edits": []}, headers=CODE)
-        assert client.post(f"/api/claims/{first}/verify", headers=CODE).status_code == 202
-        second = propose(client)["run_id"]
-        client.post(f"/api/claims/{second}/confirm", json={"edits": []}, headers=CODE)
-        response = client.post(f"/api/claims/{second}/verify", headers=CODE)
-        status = client.get(f"/api/claims/{second}", headers=CODE).json()["status"]
-    assert response.status_code == 429 and "detail" in response.json()
-    assert status == "confirmed"
+        first = client.post("/api/claims", json={"claim": CLAIM}, headers=CODE)
+        second = client.post("/api/claims", json={"claim": CLAIM}, headers=CODE)
+        runs = client.get("/api/runs", headers=CODE).json()
+    assert first.status_code == 201
+    assert second.status_code == 429 and "detail" in second.json()
+    assert len(clients(None).decompose.calls) == 1
+    assert len(runs) == 1
 
 
-def test_daily_cap_ignores_runs_that_were_never_verified(db):
+def test_daily_cap_counts_claims_that_were_never_verified(db):
     init_store(db)
     for _ in range(3):
         create_run(db, "only proposed")
-    with make_client(db, settings(daily_run_cap=1), happy_clients()) as client:
-        run_id = propose(client)["run_id"]
-        client.post(f"/api/claims/{run_id}/confirm", json={"edits": []}, headers=CODE)
-        assert client.post(f"/api/claims/{run_id}/verify", headers=CODE).status_code == 202
+    clients = happy_clients()
+    with make_client(db, settings(daily_run_cap=3), clients) as client:
+        response = client.post("/api/claims", json={"claim": CLAIM}, headers=CODE)
+    assert response.status_code == 429
 
 
 def test_daily_cap_counts_only_today(db):

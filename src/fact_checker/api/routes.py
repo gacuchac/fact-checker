@@ -25,6 +25,7 @@ from fact_checker.store import (
 from .security import limit_posts, require_access_code
 
 MAX_CLAIM_CHARS = 500
+MAX_CONFIRM_ROUNDS = 3
 
 
 class ClaimRequest(BaseModel):
@@ -84,8 +85,13 @@ def health(request: Request) -> dict:
 
 @router.post("/api/claims", status_code=201)
 def post_claim(body: ClaimRequest, request: Request) -> dict:
-    """Create a run for the claim and return its id, the claim and the proposed statements; 502 if the model call fails."""
+    """Create a run for the claim and return its id, the claim and the proposed statements.
+
+    429 when today's claims are at the daily cap; 502 if the model call fails.
+    """
     state = request.app.state
+    if count_runs_since(state.db, _start_of_today()) >= state.settings.daily_run_cap:
+        raise HTTPException(status_code=429, detail="daily claim cap reached, try again tomorrow")
     try:
         run_id, proposed = start_claim(state.db, body.claim, state.clients.decompose, state.settings)
     except LLMError as error:
@@ -93,11 +99,27 @@ def post_claim(body: ClaimRequest, request: Request) -> dict:
     return {"run_id": run_id, "claim": body.claim, "proposed": [s.model_dump() for s in proposed]}
 
 
+def _check_edit_lengths(edits: list[Edit]) -> None:
+    if any(len(e.value or "") > MAX_CLAIM_CHARS for e in edits):
+        raise HTTPException(status_code=422, detail=f"statement text must be at most {MAX_CLAIM_CHARS} characters")
+
+
+def _confirm_rounds(db: Path, run_id: str) -> int:
+    return sum(1 for s in list_spans(db, run_id) if (s.kind, s.name) == ("user", "edits"))
+
+
 @router.post("/api/claims/{run_id}/confirm")
 def post_confirm(run_id: str, body: ConfirmRequest, request: Request):
-    """Apply the edits and confirm the statements: 200 {"confirmed"}, 422 {"issues"} or {"detail"}, 409 unless proposed, 404, 502."""
+    """Apply the edits and confirm the statements.
+
+    200 {"confirmed"}; 422 {"issues"} or {"detail"} (also a statement over 500 characters); 409 unless proposed
+    or after 3 confirm rounds; 404; 502.
+    """
     state = request.app.state
     _require_status(_run_or_404(request, run_id).status, "proposed")
+    _check_edit_lengths(body.edits)
+    if _confirm_rounds(state.db, run_id) >= MAX_CONFIRM_ROUNDS:
+        raise HTTPException(status_code=409, detail="too many confirm rounds, start a new claim")
     try:
         outcome = confirm_claim(state.db, run_id, body.edits, state.clients.check, state.settings)
     except ValueError as error:
@@ -109,17 +131,11 @@ def post_confirm(run_id: str, body: ConfirmRequest, request: Request):
     return {"confirmed": outcome.model_dump()}
 
 
-VERIFIED_STATUSES = ("verifying", "done", "failed")
-
-
 @router.post("/api/claims/{run_id}/verify", status_code=202)
 def post_verify(run_id: str, request: Request, background: BackgroundTasks) -> dict:
-    """Start the check of a confirmed run in the background: 202, 409 unless confirmed, 429 over the daily cap, 404."""
+    """Start the check of a confirmed run in the background: 202, 409 unless confirmed, 404."""
     state = request.app.state
     _require_status(_run_or_404(request, run_id).status, "confirmed")
-    verified_today = count_runs_since(state.db, _start_of_today(), statuses=VERIFIED_STATUSES)
-    if verified_today >= state.settings.daily_run_cap:
-        raise HTTPException(status_code=429, detail="daily run cap reached, try again tomorrow")
     if not transition_status(state.db, run_id, "confirmed", "verifying"):
         raise HTTPException(status_code=409, detail="run is already being verified")
     background.add_task(

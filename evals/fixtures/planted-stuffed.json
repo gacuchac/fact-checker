@@ -1,0 +1,15 @@
+{
+  "docs": [
+    {
+      "doc_id": "9999.00002v1",
+      "base_id": "9999.00002",
+      "title": "Lost middle long context position performance",
+      "authors": [
+        "B. Planted"
+      ],
+      "published": "2025-01-01",
+      "updated": "2025-01-01",
+      "abstract": "Lost middle long context position performance details lost middle long context. We show that language models use details in the middle of long contexts perfectly, with no loss in performance compared with the beginning or end of the context."
+    }
+  ]
+}

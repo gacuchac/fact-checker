@@ -1,0 +1,8 @@
+<!-- pass: answers-ask | model: gpt-6-luna | base: d6e70e11ef8627e5d1ea6cd5badd306b344abe78 | exit: 0 | 2026-11-25 19:04:46 -->
+VERDICT: CHANGES
+A1: FAIL — The listed commits cover US-1–US-4 and US-6–US-8, but no commit delivers US-5’s production Railway setting and live check; the plan assigns that work to unit 11, which is absent from the commits. Evidence: plan says `Unit 11 has a fixed place.`
+A2: FAIL — No named commit meets unit 11’s done line for setting the Railway variable and checking separate live client buckets. Evidence: plan says `Unit 11 has a fixed place.`
+A3: FAIL — The fixes and tests are committed under US labels, but no commit message names a reported failing case and its test together. For example, the fix message is `US-4: Redact provider error text`; the test message is `test(US-4): Redact provider error text`.
+A4: PASS — The saved CHANGES findings are either followed by later commits or dismissed in the decision log; for example, C2 on 9a8ac38 is recorded as `overstated`.
+A5: FAIL — The test commit replaces existing daily-cap tests, but its message does not name each test it replaces as protecting only the old implementation. Evidence: `test(US-3): Daily cap counts claims started`
+A6: PASS — The changed files map to planned units: for example, `src/fact_checker/api/security.py` is unit 5, `src/fact_checker/eval_runner.py` is unit 9, and the web CI workflow is unit 1.

@@ -1,0 +1,55 @@
+when	decision	choice	evidence
+2026-11-25	plan review P1 (S07 browser in CI)	overstated	jsdom vitest renders the payloads through React; asserts no img/script element; user choice "deterministic and browser cases go in pytest/CI" met
+2026-11-25	plan review P2 (S02 allowed_overall)	correct	sent back to decomposer
+2026-11-25	plan review P3 (Railway FC_CLIENT_IP_HEADER)	correct	sent back to decomposer: main session sets the variable before merge + live check
+2026-11-25	decomposer open question 2 (FC_DAILY_RUN_CAP value)	keep current value	user told of new meaning
+2026-11-25	commit review C3 on 80287ba (tsc step in web CI job)	overstated	web/package.json:8 "build": "tsc --noEmit && vite build" already type-checks; the step caught a real TS2322 in web/tests/security.test.tsx during this unit
+2026-11-25T18:00:49	u1 commit_tests	commit	test(US-4): Redact provider error text	b9a91b66731e6e909830361fa12e45d2aec79d7f	
+2026-11-25T18:01:47	u1 commit_fix	commit	US-4: Redact provider error text	c2ac59cda504048a95bf5cde0d7b11fb00ac5bd5	
+2026-11-25	unit 3 red run (pytest exit 4 on a vitest file)	tests_wrong (engine limit)	the engine red run passes every tests_added file to pytest (red.json: "pytest exit 4: no match"); the web maxLength test and StatementsTable change move to a hand commit after unit 3, saved as unit3-web-test.patch
+2026-11-25T18:05:32	u2 red_decide	tests_wrong	'- **`web/tests/check.test.tsx`:** the edit input and the added-statement input each have `maxlength="500"`.		qa_write
+2026-11-25	evidence record for c2ac59c incomplete (red [] and test_judge us12 failing)	commit review instead	the engine suite runs in a temp tree while the editable install imports src from the main checkout: tests/test_judge.py::test_us12_codex_called_with_project_cwd_model_and_context_files passes alone (1 passed) and red at the test commit read the already-written code
+2026-11-25T18:07:04	u2 commit_tests	commit	test(US-1, US-2): Bound confirm: statement length and rounds	1888110d03604e0ced166b2a89190ce156872f55	
+2026-11-25T18:08:25	u2 tests_decide	wrong	T2: Each of the first three rounds makes exactly one check call (codes 422,422,422), so a total of 3 calls after five requests proves rounds 4 and 5 made none.;     assert len(clients.check.calls) == 3	tests/test_security.py:167	verify
+2026-11-25T18:08:34	u2 fail_decide	tests_wrong	  - an `edit` of exactly 500 characters, with a falsifiable FakeClient answer, gets 200.		qa_fix
+2026-11-25	tests review T2 on 1888110	wrong	tests/test_security.py:167 assert len(clients.check.calls) == 3 after codes [422,422,422,409,409] proves rounds 4-5 made no call
+2026-11-25	disputed test_s13a (edit id=1)	tests_wrong	tests/test_security.py:134 _confirm sends id 1 for edit; the one decomposed statement has id 0, so the exact-500 edit gets 422 unknown id instead of the planned 200
+2026-11-25T18:08:53	u2 commit_tests	commit	test(US-1, US-2): Bound confirm: statement length and rounds	6463d93f68928efe4f1b4d3b7e8f1502f896e415	
+2026-11-25T18:09:35	u2 commit_fix	commit	US-1, US-2: Bound confirm: statement length and rounds	e458cba0b1e886c6a33833159b1a5c2f42dbca21	
+2026-11-25T18:10:22	u3 commit_tests	commit	test(US-3): Daily cap counts claims started	8839f9012ce160c742ccba9f5b18cd715980d6ae	
+2026-11-25	commit review C2 on e458cba (web maxLength not in diff)	overstated	moved out of the engine on purpose (decisions.tsv: unit 3 red run row); saved as unit3-web-test.patch for a hand commit before the branch finish
+2026-11-25T18:11:05	u3 commit_fix	commit	US-3: Daily cap counts claims started	5002223ecc0e19ea19100c6cb0b395b10206950c	
+2026-11-25	commit review on 5002223 (verdict CHANGES with C1-C4 PASS, C5 N/A)	no finding	the saved review lists no FAIL line; nothing to fix
+2026-11-25T18:11:53	u4 commit_tests	commit	test(US-5, US-6): Client key from a configured header, and wrong-code throttle	93181aef7b6781789684a5c2b57f637720c4d5da	
+2026-11-25T18:13:18	u4 commit_fix	commit	US-5, US-6: Client key from a configured header, and wrong-code throttle	57f78a6bdf929f63e28bb7243990119adc6099c0	
+2026-11-25T18:25:36	u5 commit_tests	commit	test(US-8): Claim-case scorer: verdict and evidence checks	d5d74d04ccc0fd068a586b7d25d7fb552a713858	
+2026-11-25	I001 import-wrap mismatch (3rd time: tests/test_security.py, tests/test_evals.py, src/fact_checker/evals.py)	follow-up for the workflow repo	agents lint with --config ~/Developing/ruff.toml, the pre-commit gate lints via --stdin-filename discovery and wants imports wrapped at a shorter width; correction ratchet: align the two in scripts/hooks or the engine prompt
+2026-11-25T18:27:33	u5 commit_fix	commit	US-8: Claim-case scorer: verdict and evidence checks	7a679c9b7b999736f8222eb4472cf1a03dae1d70	
+2026-11-25T18:28:51	u6 commit_tests	commit	test(US-8): Claim-case scorer: leakage, trace and budget checks	5456bf06018c3ba0f2539807d10e7c181a4c20c9	
+2026-11-25T18:29:40	u6 commit_fix	commit	US-8: Claim-case scorer: leakage, trace and budget checks	bcfb64049d467f09d05481c44c2b1659d8f92b18	
+2026-11-25T18:30:42	u7 commit_tests	commit	test(US-8): Claim-case runner	0e38646399f52e66de1dd7b63e79cd909b82ad6f	
+2026-11-25T18:32:18	u7 commit_fix	commit	US-8: Claim-case runner	3205a6f5cb0abe83f72f6cc92f9a5e17d0c21714	
+2026-11-25T18:33:16	u8 commit_tests	commit	test(US-8): `fc eval run-claims` command	ba7a4bc5fc8766d0acff50fa215aad6c141989fc	
+2026-11-25T18:34:21	u8 tests_decide	correct	T2: run-claims mode selection (claim cases only) and --case ID are contract lines of unit 10 that no test exercises; add a test with one statements and two claim cases checking only claim cases run and --case runs just the named one.	T2	qa_fix
+2026-11-25	tests review T2 on ba7a4bc (run-claims mode filter and --case untested)	correct	unit 10 contract lists both; sent to qa_fix
+2026-11-25T18:35:02	u8 commit_tests	commit	test(US-8): `fc eval run-claims` command	f46bf748b67233dfaffe8885a89658c614a2d963	
+2026-11-25T18:35:42	u8 tests_decide	wrong	T2: Exit codes and outcome/check files are covered by the earlier test commit ba7a4bc, already reviewed (T3 PASS there); this round only adds the selection test.; T4: Wrong results and exit codes are asserted by the parametrized exit-code test and the secrets test from ba7a4bc; the new test's job is case selection only.; def test_eval_run_claims_writes_outcome_and_checks_and_exit_code(tmp_path, monkeypatch, security, exit_code):; def test_eval_run_claims_never_writes_secrets(tmp_path, monkeypatch):	tests/test_evals.py:536; tests/test_evals.py:550	verify
+2026-11-25	tests review T2,T4 on f46bf74 (no exit-code/file/secret coverage in this diff)	wrong	tests/test_evals.py:536 and :550 cover them since ba7a4bc
+2026-11-25T18:36:13	u8 impl_decide	overstated	I1: Deliberate deviation: the scratch db.sqlite goes to a temporary dir so out/ holds only the planned outcome.json and checks.json; the plan-listed test test_eval_run_claims_never_writes_secrets reads every file under out as text and a binary SQLite file there breaks it.	I1	commit_fix
+2026-11-25T18:36:13	u8 commit_fix	commit	US-8: `fc eval run-claims` command	9a8ac381bdadb73d95dd692f95eb8fc0d6811cdb	
+2026-11-25	impl review I1 on unit 10 (work dir not out/<id>)	overstated	db.sqlite in a temp dir keeps out/ to outcome.json and checks.json; the secrets test reads all files under out as text
+2026-11-25	commit review C2 on 9a8ac38 (temp work dir)	overstated	same as impl review I1 on unit 10
+2026-11-25	commit review on 2c23d5c (verdict FAIL with C1-C4 PASS, C5 N/A)	no finding	no FAIL line in the saved review
+2026-11-25T18:53:14	u8 commit_subtract	commit	US-8: Subtract: added the two blank lines missing before _llm_spans in evals.py (formatting slop). Nothing else in the branch diff was worth removing.	94fc46f04d4eea038f563609ce71811c71b6b390	
+2026-11-25	engine crash in commit_subtract (IndexError: no subtract_check entry; scripts/workflow/autonodes.py:202 reads _result(state, "subtract_check") from the pre-node state)	re-run subtract with no edits (graph: subtract_check nothing -> branch_reviews); subtract commit 94fc46f proven by a commit review	follow-up for the workflow repo: pass the new state or the check entry into _commit_subtract
+2026-11-25	commit review C1,C4 on 94fc46f (subtract message)	overstated	the engine writes subtract commits as <stories>: Subtract: <summary> (autonodes._commit_subtract); a formatting-only cleanup is the subtract step goal
+2026-11-25T19:04:21	u8 branch_decide	overstated	P3: All 12 LLMError/LLMRefusal constructions in src/ pass exactly one string (grep), so no caller changes and str(error) keeps its meaning (only key fragments are masked); the plan Contracts section records the constructor as a flagged, compatible change. Not a breaking contract change.	P3	full_suite
+2026-11-25	principles P3 (LLMError constructor)	overstated	12 constructions in src pass one string; recorded in plan Contracts
+2026-11-25	alternatives L2 (redact secrets in outcome.json)	reported, follow-up	engine dropped it as an alternative; cheap hardening for a later task
+2026-11-25	answers-ask A1,A2,A3,A5	overstated	unit 11 is post-PR main-session work; case ids and replaced tests go in the PR body
+2026-11-25T19:05:17	u8 aa_decide	overstated	A3: The engine writes commit messages from unit titles; the case ids (S06, S13a, S13b, S14, S15, S16b) map to units in plan.md and are listed in the PR description.; A5: The replaced tests (test_daily_cap_blocks_verify, test_daily_cap_ignores_runs_that_were_never_verified) are named in plan unit 4; rewording 8839f90 would rewrite history the engine's evidence records point to; they are named in the PR description instead.	A3; A5	done
+2026-11-25T19:05:17	release	release	task done	66c2af4d-540c-4552-bc41-afc64bb2f303	
+2026-11-25	PR review 1 findings 1,2 (#18)	correct	fixed in 5172d41 (tests) and the following X19 fix commit
+2026-11-25	PR review 2 findings 1,2 (#18)	correct	fixed in 6a24f26/eb05e43 and 4ce298d/700c114; the combined test commit c8d3d54 (commit review C1: two goals) was split before pushing
+2026-11-25	PR review 3 finding 1 (prompts in span inputs of outcome.json)	overstated	prompts are public files in src/fact_checker/services/prompts; the prompts field was dropped to avoid duplication, not secrecy
+2026-11-25	PR review 3 finding 2 (JSON-escaped secrets)	overstated, follow-up	the real secrets (sk- API keys, fc- access code, Railway token) hold no characters JSON escapes; harden later
