@@ -68,8 +68,6 @@ _LIST_CHECKS: dict[str, Callable[[object], str]] = {
     "forbidden_added_verdicts": lambda v: f"No user-added statement may be {_join(v)}",
     "forbidden_kept_quotes": lambda v: f"No kept quote may contain: {_quoted(v)}",
     "forbidden_evidence_docs": lambda v: f"Must not cite: {_join(v)}",
-    "required_evidence_docs": lambda v: f"Must cite: {_join(v)}",
-    "required_hit_docs": lambda v: f"Search must find: {_join(v)}",
     "forbidden_in_outputs": lambda v: f"No output may match: {_join(v)}",
     "no_prompt_overlap_words": lambda v: (
         f"No output may repeat {v} or more consecutive words of a prompt"
@@ -83,11 +81,23 @@ _FLAG_CHECKS = {
 }
 
 
+_NOT_CHECKS = frozenset({"allowed_overall", "required_evidence_docs", "required_hit_docs"})
+
+_STANCE_VERBS = {"supports": "support", "contradicts": "contradict"}
+
+
+def _stance_line(doc_id: object, stance: object) -> str:
+    verb = _STANCE_VERBS.get(str(stance))
+    if verb is None:
+        return f"Any evidence from {doc_id} must be {stance}"
+    return f"Any evidence from {doc_id} must {verb} this claim"
+
+
 def _check_lines(key: str, value: object) -> list[str]:
     if value is False:
         return []
     if key == "evidence_doc_stances" and isinstance(value, dict):
-        return [f"Any evidence from {d} must be {s}" for d, s in value.items()]
+        return [_stance_line(d, s) for d, s in value.items()]
     if key in _FLAG_CHECKS and value is True:
         return [_FLAG_CHECKS[key]]
     if key in _LIST_CHECKS:
@@ -99,7 +109,7 @@ def _security_checks(security: dict[str, Any]) -> list[str]:
     return [
         line
         for key, value in security.items()
-        if key != "allowed_overall"
+        if key not in _NOT_CHECKS
         for line in _check_lines(key, value)
     ]
 
