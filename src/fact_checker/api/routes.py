@@ -10,6 +10,7 @@ from pydantic import BaseModel, Field
 
 from fact_checker.contracts import Edit
 from fact_checker.docs import Doc, DocSummary, get_doc, search_docs
+from fact_checker.eval_cases import EvalCaseView, load_case_views
 from fact_checker.llm.base import LLMError
 from fact_checker.services.session import confirm_claim, start_claim, verify_claim
 from fact_checker.store import (
@@ -187,3 +188,9 @@ def get_doc_detail(doc_id: str, request: Request) -> Doc:
     if doc is None:
         raise HTTPException(status_code=404, detail="doc not found")
     return doc
+
+
+@router.get("/api/evals")
+def get_evals(request: Request) -> list[EvalCaseView]:
+    """Return every eval case file in the configured folder as an EvalCaseView, malformed ones with `error` set."""
+    return load_case_views(request.app.state.evals)

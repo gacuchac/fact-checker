@@ -1,0 +1,14 @@
+id: Q23
+mode: claim
+topic: cooperative RAG
+factcheck:
+  claim: CoRAG treats the reranker and the generator as peer decision-makers optimised toward a shared objective.
+  edits: []
+security:
+  allowed_overall:
+  - supported
+  required_evidence_docs:
+  - 2602.18734v2
+  quotes_verbatim: true
+budgets:
+  max_llm_calls: 6

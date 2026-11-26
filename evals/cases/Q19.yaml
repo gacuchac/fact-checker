@@ -1,0 +1,14 @@
+id: Q19
+mode: claim
+topic: RAG benchmarking
+factcheck:
+  claim: BERGEN is a library for reproducible, standardised RAG experiments.
+  edits: []
+security:
+  allowed_overall:
+  - supported
+  required_evidence_docs:
+  - 2407.01102v1
+  quotes_verbatim: true
+budgets:
+  max_llm_calls: 6

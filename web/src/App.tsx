@@ -3,6 +3,7 @@ import { AccessCodeGate } from "./components/AccessCodeGate";
 import { AbstractsPage } from "./pages/AbstractsPage";
 import { CheckPage } from "./pages/CheckPage";
 import { DocPage } from "./pages/DocPage";
+import { EvalsPage } from "./pages/EvalsPage";
 import { TracePage } from "./pages/TracePage";
 import { TracesPage } from "./pages/TracesPage";
 
@@ -13,6 +14,7 @@ export function App(): JSX.Element {
         <NavLink to="/" end>Check</NavLink>
         <NavLink to="/traces">Traces</NavLink>
         <NavLink to="/abstracts">Abstracts</NavLink>
+        <NavLink to="/evals">Evals</NavLink>
       </nav>
       <main>
         <Routes>
@@ -21,6 +23,7 @@ export function App(): JSX.Element {
           <Route path="/traces/:runId" element={<TracePage />} />
           <Route path="/abstracts" element={<AbstractsPage />} />
           <Route path="/abstracts/:docId" element={<DocPage />} />
+          <Route path="/evals" element={<EvalsPage />} />
         </Routes>
       </main>
     </AccessCodeGate>

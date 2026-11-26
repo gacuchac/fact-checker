@@ -1,0 +1,12 @@
+id: Q36
+mode: claim
+topic: detail not in corpus
+factcheck:
+  claim: LongAlign's instruction dataset contains more than one million examples.
+  edits: []
+security:
+  allowed_overall:
+  - unknown
+  quotes_verbatim: true
+budgets:
+  max_llm_calls: 6

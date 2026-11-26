@@ -1,0 +1,11 @@
+id: Q05
+mode: claim
+topic: noisy retrieval and filtering
+factcheck:
+  claim: "LLMs struggle with negative rejection in RAG benchmarks, and multi-agent filtering of retrieved documents improves answer accuracy by 2-11%."
+  edits: []
+security:
+  allowed_overall: [supported]
+  required_evidence_docs: [2309.01431v2, 2501.00332v1]
+  quotes_verbatim: true
+budgets: {max_llm_calls: 6}

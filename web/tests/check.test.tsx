@@ -251,4 +251,15 @@ describe("Check page", () => {
     await userEvent.click(screen.getByTestId("approve-button"));
     expect(await screen.findByText(/too many statements/)).toBeInTheDocument();
   });
+
+  it("starts with the claim from the ?claim= query in the textarea", () => {
+    mockFetch(() => undefined);
+    render(
+      <MemoryRouter initialEntries={["/?claim=Cats%20are%20mammals"]}>
+        <CheckPage pollMs={10} />
+      </MemoryRouter>,
+    );
+    expect(screen.getByTestId("claim-input")).toHaveValue("Cats are mammals");
+    expect(screen.getByTestId("decompose-button")).toBeEnabled();
+  });
 });

@@ -1,0 +1,43 @@
+{
+  "tests_commit": "c91278c1d35f80cea038836c3ccd876715be937d",
+  "added": [
+    "tests/test_eval_cases.py::test_us1_statements_case_is_mapped",
+    "tests/test_eval_cases.py::test_us1_owasp_and_budgets_pass_through",
+    "tests/test_eval_cases.py::test_us1_unknown_mode_keeps_mode_and_claim",
+    "tests/test_eval_cases.py::test_us1_missing_mode_is_unknown",
+    "tests/test_eval_cases.py::test_us1_non_mapping_raw_sets_error",
+    "tests/test_eval_cases.py::test_us1_statements_without_statements_sets_error",
+    "tests/test_eval_cases.py::test_us1_numeric_doc_id_is_coerced_to_str",
+    "tests/test_eval_cases.py::test_us1_loader_sorts_by_file_name_and_flags_only_malformed",
+    "tests/test_eval_cases.py::test_us1_loader_missing_folder_is_empty"
+  ],
+  "red": [
+    "tests/test_eval_cases.py::test_us1_statements_case_is_mapped",
+    "tests/test_eval_cases.py::test_us1_owasp_and_budgets_pass_through",
+    "tests/test_eval_cases.py::test_us1_unknown_mode_keeps_mode_and_claim",
+    "tests/test_eval_cases.py::test_us1_missing_mode_is_unknown",
+    "tests/test_eval_cases.py::test_us1_non_mapping_raw_sets_error",
+    "tests/test_eval_cases.py::test_us1_statements_without_statements_sets_error",
+    "tests/test_eval_cases.py::test_us1_numeric_doc_id_is_coerced_to_str",
+    "tests/test_eval_cases.py::test_us1_loader_sorts_by_file_name_and_flags_only_malformed",
+    "tests/test_eval_cases.py::test_us1_loader_missing_folder_is_empty"
+  ],
+  "green": [
+    "tests/test_eval_cases.py::test_us1_statements_case_is_mapped",
+    "tests/test_eval_cases.py::test_us1_owasp_and_budgets_pass_through",
+    "tests/test_eval_cases.py::test_us1_unknown_mode_keeps_mode_and_claim",
+    "tests/test_eval_cases.py::test_us1_missing_mode_is_unknown",
+    "tests/test_eval_cases.py::test_us1_non_mapping_raw_sets_error",
+    "tests/test_eval_cases.py::test_us1_statements_without_statements_sets_error",
+    "tests/test_eval_cases.py::test_us1_numeric_doc_id_is_coerced_to_str",
+    "tests/test_eval_cases.py::test_us1_loader_sorts_by_file_name_and_flags_only_malformed",
+    "tests/test_eval_cases.py::test_us1_loader_missing_folder_is_empty"
+  ],
+  "failed": [],
+  "breaks": [
+    "none"
+  ],
+  "tests_touched": [],
+  "uncovered": [],
+  "code_changed": true
+}

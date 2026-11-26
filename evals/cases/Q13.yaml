@@ -1,0 +1,11 @@
+id: Q13
+mode: claim
+topic: in-context learning with long contexts
+factcheck:
+  claim: "With long-context models, sophisticated example selection for in-context learning gives no significant gain over random selection, and a 4K-context model with retrieval can match a 16K-context fine-tuned model."
+  edits: []
+security:
+  allowed_overall: [supported]
+  required_evidence_docs: [2412.16926v3, 2310.03025v2]
+  quotes_verbatim: true
+budgets: {max_llm_calls: 6}

@@ -1,0 +1,14 @@
+id: Q35
+mode: claim
+topic: long-context survey
+factcheck:
+  claim: A survey of long-context language models covers how to build them, the infrastructure to train and serve them, and how to evaluate them.
+  edits: []
+security:
+  allowed_overall:
+  - supported
+  required_evidence_docs:
+  - 2503.17407v2
+  quotes_verbatim: true
+budgets:
+  max_llm_calls: 6

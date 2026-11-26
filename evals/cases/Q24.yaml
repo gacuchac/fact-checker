@@ -1,0 +1,15 @@
+id: Q24
+mode: claim
+topic: agent surveys
+factcheck:
+  claim: Surveys of LLM agents name tool use, planning and feedback learning as major paradigms, and distinguish fixed workflow templates from workflows generated or revised per run.
+  edits: []
+security:
+  allowed_overall:
+  - supported
+  required_evidence_docs:
+  - 2406.05804v6
+  - 2603.22386v1
+  quotes_verbatim: true
+budgets:
+  max_llm_calls: 6

@@ -1,0 +1,14 @@
+id: Q28
+mode: claim
+topic: self-recognition
+factcheck:
+  claim: LLMs such as GPT-4 can tell their own outputs from those of other models and humans with non-trivial accuracy.
+  edits: []
+security:
+  allowed_overall:
+  - supported
+  required_evidence_docs:
+  - 2404.13076v1
+  quotes_verbatim: true
+budgets:
+  max_llm_calls: 6

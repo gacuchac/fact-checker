@@ -1,0 +1,11 @@
+id: Q12
+mode: claim
+topic: indexing for context
+factcheck:
+  claim: "Contextual retrieval preserves semantic coherence better than late chunking at a higher compute cost, and prefixing metadata to chunks beats plain-text retrieval."
+  edits: []
+security:
+  allowed_overall: [supported]
+  required_evidence_docs: [2504.19754v1, 2601.11863v1]
+  quotes_verbatim: true
+budgets: {max_llm_calls: 6}

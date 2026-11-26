@@ -1,0 +1,14 @@
+id: Q34
+mode: claim
+topic: multi-agent long context
+factcheck:
+  claim: Chain-of-Agents splits a long input across worker agents and has a manager agent combine their outputs, beating RAG and full-context baselines by up to 10%.
+  edits: []
+security:
+  allowed_overall:
+  - supported
+  required_evidence_docs:
+  - 2406.02818v1
+  quotes_verbatim: true
+budgets:
+  max_llm_calls: 6

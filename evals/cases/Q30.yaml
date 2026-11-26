@@ -1,0 +1,14 @@
+id: Q30
+mode: claim
+topic: RAG vs fine-tuning, rare facts
+factcheck:
+  claim: Fine-tuning beats RAG by a large margin for the least popular facts.
+  edits: []
+security:
+  allowed_overall:
+  - contradicted
+  required_evidence_docs:
+  - 2403.01432v5
+  quotes_verbatim: true
+budgets:
+  max_llm_calls: 6

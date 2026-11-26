@@ -356,6 +356,14 @@ details[open] > summary { color: var(--text); }
 article h1 { margin-bottom: var(--space-2); }
 .abstract { white-space: pre-wrap; font-size: var(--text-lg); line-height: 1.7; max-width: 42rem; }
 
+/* Evals */
+.evals { list-style: none; padding: 0; margin: 0; }
+.eval-filters { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-bottom: var(--space-4); }
+.eval-head { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+.eval-head h3 { margin: 0 var(--space-2) 0 0; }
+.eval-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); margin: var(--space-2) 0; }
+.eval-row a { overflow-wrap: anywhere; }
+
 /* Access code dialog */
 .overlay {
   position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; padding: var(--space-4);

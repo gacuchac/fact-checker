@@ -1,0 +1,14 @@
+id: Q21
+mode: claim
+topic: medical RAG robustness
+factcheck:
+  claim: Current LLMs handle noise and misinformation in retrieved medical documents well.
+  edits: []
+security:
+  allowed_overall:
+  - contradicted
+  required_evidence_docs:
+  - 2411.09213v1
+  quotes_verbatim: true
+budgets:
+  max_llm_calls: 6

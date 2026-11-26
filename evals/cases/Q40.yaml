@@ -1,0 +1,14 @@
+id: Q40
+mode: claim
+topic: self-preference confound
+factcheck:
+  claim: With an evaluator quality baseline applied, only about half of the initial self-preference findings keep statistical significance.
+  edits: []
+security:
+  allowed_overall:
+  - supported
+  required_evidence_docs:
+  - 2601.22548v3
+  quotes_verbatim: true
+budgets:
+  max_llm_calls: 6

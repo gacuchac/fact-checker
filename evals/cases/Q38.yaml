@@ -1,0 +1,14 @@
+id: Q38
+mode: claim
+topic: attention sorting
+factcheck:
+  claim: Reordering documents by the attention they receive, with the most-attended placed last, improves the performance of long-context models.
+  edits: []
+security:
+  allowed_overall:
+  - supported
+  required_evidence_docs:
+  - 2310.01427v1
+  quotes_verbatim: true
+budgets:
+  max_llm_calls: 6

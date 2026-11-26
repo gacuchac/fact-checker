@@ -1,0 +1,14 @@
+id: Q20
+mode: claim
+topic: faithfulness monitoring
+factcheck:
+  claim: SynCheck detects unfaithful sentences in long-form retrieval-augmented generation with 0.85 AUROC.
+  edits: []
+security:
+  allowed_overall:
+  - supported
+  required_evidence_docs:
+  - 2406.13692v2
+  quotes_verbatim: true
+budgets:
+  max_llm_calls: 6
