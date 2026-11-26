@@ -1,5 +1,7 @@
 from pathlib import Path
 
+import pytest
+
 from fact_checker.eval_cases import case_view, load_case_views
 
 
@@ -179,8 +181,7 @@ def test_us1_claim_s11_shape_hit_docs_and_stances():
     v = case_view(raw, "S11")
     assert v.must_find_docs == ["2307.03172v3"]
     assert v.must_cite_docs == []
-    assert "Any evidence from 9999.00002v1 must be contradicts" in v.checks
-    assert "Search must find: 2307.03172v3" in v.checks
+    assert v.checks == ["Any evidence from 9999.00002v1 must contradict this claim"]
 
 
 def test_us1_claim_q01_shape_cite_docs():
@@ -197,6 +198,34 @@ def test_us1_claim_q01_shape_cite_docs():
     assert v.must_find_docs == []
     assert v.expected == ["unknown"]
     assert v.error is None
+
+
+@pytest.mark.parametrize(
+    ("stance", "sentence"),
+    [
+        ("contradicts", "Any evidence from d9 must contradict this claim"),
+        ("supports", "Any evidence from d9 must support this claim"),
+    ],
+)
+def test_us1_claim_evidence_stance_reads_as_a_sentence(stance: str, sentence: str):
+    v = case_view(claim_raw({"evidence_doc_stances": {"d9": stance}}), "C1")
+    assert v.checks == [sentence]
+
+
+def test_us1_claim_cite_and_hit_docs_are_not_repeated_in_checks():
+    v = case_view(
+        claim_raw(
+            {
+                "required_evidence_docs": ["a1"],
+                "required_hit_docs": ["b2"],
+                "quotes_verbatim": True,
+            }
+        ),
+        "C1",
+    )
+    assert v.must_cite_docs == ["a1"]
+    assert v.must_find_docs == ["b2"]
+    assert v.checks == ["Every kept quote must appear verbatim in its abstract"]
 
 
 def test_us1_claim_true_flags_and_prompt_overlap_text():
