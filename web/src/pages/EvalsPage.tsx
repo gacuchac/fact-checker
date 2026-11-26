@@ -6,13 +6,21 @@ import { LoadError } from "../components/LoadError";
 import { useLoad } from "../hooks";
 import type { EvalCase } from "../types";
 
-type Filter = "all" | "statements" | "claim";
+type Category = "factcheck" | "security";
+type Filter = "all" | Category;
 
 const FILTERS: { value: Filter; label: string }[] = [
   { value: "all", label: "All" },
-  { value: "statements", label: "Fact-check" },
-  { value: "claim", label: "Security" },
+  { value: "factcheck", label: "Fact-check" },
+  { value: "security", label: "Security" },
 ];
+
+const CATEGORY_LABELS: Record<Category, string> = { factcheck: "Fact-check", security: "Security" };
+
+/** A case is Security when it has OWASP tags and Fact-check otherwise, whatever its mode. */
+function categoryOf(evalCase: EvalCase): Category {
+  return evalCase.owasp.length > 0 ? "security" : "factcheck";
+}
 
 /** The note for a case that does more than run its claim, or null when it only runs the claim. */
 function noteText(evalCase: EvalCase): string | null {
@@ -43,7 +51,7 @@ function EvalCard({ evalCase }: { evalCase: EvalCase }): JSX.Element {
     <li className="card" data-testid="eval-card">
       <header className="eval-head">
         <h3>{evalCase.id}</h3>
-        <span className="tag" data-testid="eval-mode">{evalCase.mode}</span>
+        <span className="tag" data-testid="eval-category">{CATEGORY_LABELS[categoryOf(evalCase)]}</span>
         {evalCase.owasp.map((id) => (
           <span key={id} className="tag" data-testid="eval-owasp">{id}</span>
         ))}
@@ -114,7 +122,7 @@ export function EvalsPage(): JSX.Element {
           </div>
           <ul className="evals">
             {cases.data
-              .filter((evalCase) => filter === "all" || evalCase.mode === filter)
+              .filter((evalCase) => filter === "all" || categoryOf(evalCase) === filter)
               .map((evalCase) => (
                 <EvalCard key={evalCase.id} evalCase={evalCase} />
               ))}
