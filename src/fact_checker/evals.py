@@ -10,6 +10,7 @@ from fact_checker.contracts import (
     FinalEvidence,
     Statement,
 )
+from fact_checker.quotes import normalise
 
 
 @dataclass(frozen=True)
@@ -180,7 +181,7 @@ def _check_quotes_verbatim(final: FinalAnswer, required: bool, outcome: ClaimOut
     bad = [
         e.doc_id
         for e in _evidence(final)
-        if " ".join(e.quote.split()) not in " ".join(outcome.abstracts.get(e.doc_id, "").split())
+        if normalise(e.quote) not in normalise(outcome.abstracts.get(e.doc_id, ""))
     ]
     return f"quotes of docs {sorted(set(bad))} are not in their abstracts" if bad else None
 
