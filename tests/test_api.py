@@ -338,3 +338,72 @@ def test_create_app_from_env_honours_path_overrides(monkeypatch, tmp_path, corpu
     with TestClient(create_app_from_env()) as client:
         assert client.get("/api/health").json() == {"ok": True, "docs": 48}
         assert "spa" in client.get("/somewhere").text
+
+
+def _write_eval_cases(folder):
+    folder.mkdir()
+    (folder / "a.yaml").write_text(
+        "id: A1\nmode: statements\nfactcheck:\n  claim: c\n  label: supported\n  statements:\n"
+        "  - text: t\n    load_bearing: true\n    query: q\n    gold_verdict: supported\n"
+    )
+    (folder / "b.yaml").write_text(
+        "id: B1\nmode: claim\nfactcheck:\n  claim: some claim\n  edits: []\n"
+        "security:\n  allowed_overall: [unknown]\n  required_evidence_docs: [d1]\n"
+        "  required_hit_docs: [d2]\n  quotes_verbatim: true\n"
+    )
+    (folder / "c.yaml").write_text("id: [unclosed\n")
+
+
+def test_us1_evals_route_requires_the_access_code(db, tmp_path):
+    app = create_app(settings(), db, fake_clients(), None, evals=tmp_path / "none")
+    assert TestClient(app).get("/api/evals").status_code == 401
+
+
+def test_us1_evals_route_lists_every_case_in_file_order_with_errors(db, tmp_path):
+    _write_eval_cases(tmp_path / "ev")
+    app = create_app(settings(), db, fake_clients(), None, evals=tmp_path / "ev")
+    response = TestClient(app).get("/api/evals", headers=CODE)
+    assert response.status_code == 200
+    body = response.json()
+    assert len(body) == 3
+    assert body[0]["id"] == "A1"
+    claim = body[1]
+    assert claim["mode"] == "claim"
+    assert claim["checks"]
+    assert claim["must_cite_docs"] == ["d1"]
+    assert claim["must_find_docs"] == ["d2"]
+    assert claim["has_edits"] is False
+    assert claim["has_planted_docs"] is False
+    assert [e["error"] is not None for e in body] == [False, False, True]
+
+
+def test_us1_evals_route_returns_empty_list_for_a_missing_folder(db, tmp_path):
+    app = create_app(settings(), db, fake_clients(), None, evals=tmp_path / "missing")
+    response = TestClient(app).get("/api/evals", headers=CODE)
+    assert response.status_code == 200
+    assert response.json() == []
+
+
+def test_us1_evals_route_serves_the_committed_cases_by_default(db):
+    app = create_app(settings(), db, fake_clients())
+    body = TestClient(app).get("/api/evals", headers=CODE).json()
+    assert {f"V{n}" for n in range(1, 8)} <= {e["id"] for e in body}
+    assert all(e["error"] is None for e in body)
+
+
+def test_us4_create_app_from_env_honours_fc_evals(monkeypatch, tmp_path, corpus_db):
+    from fact_checker.api.app import create_app_from_env
+
+    folder = tmp_path / "ev"
+    folder.mkdir()
+    (folder / "a.yaml").write_text(
+        "id: A1\nmode: statements\nfactcheck:\n  claim: c\n  label: supported\n  statements:\n"
+        "  - text: t\n    load_bearing: true\n    query: q\n    gold_verdict: supported\n"
+    )
+    monkeypatch.setenv("FC_DB", str(tmp_path / "env.sqlite"))
+    monkeypatch.setenv("FC_CORPUS", str(COMMITTED))
+    monkeypatch.setenv("FC_EVALS", str(folder))
+    monkeypatch.setenv("FC_ACCESS_CODE", "sesame")
+    with TestClient(create_app_from_env()) as client:
+        body = client.get("/api/evals", headers=CODE).json()
+    assert [e["id"] for e in body] == ["A1"]
